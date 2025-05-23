@@ -41,6 +41,23 @@
   .shadow-button {
     box-shadow: var(--shadow-button);
   }
+  
+  /* Logo responsive utilities */
+  .logo-horizontal {
+    height: auto;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+  }
+  
+  .logo-hover-effect {
+    transition: transform 0.3s ease, filter 0.3s ease;
+  }
+  
+  .logo-hover-effect:hover {
+    transform: scale(1.02);
+    filter: brightness(1.05);
+  }
 }
 
 /* Base styles */

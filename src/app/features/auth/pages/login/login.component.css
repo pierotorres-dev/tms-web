@@ -2,4 +2,120 @@
   display: block;
 }
 
-/* Additional custom styles can be added here */
+/* Brand Logo Animations */
+.logo-container {
+  position: relative;
+  display: inline-block;
+}
+
+.logo-container::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  background: linear-gradient(135deg, rgba(20, 71, 230, 0.1), rgba(20, 71, 230, 0.05));
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.logo-container:hover::before {
+  opacity: 1;
+}
+
+/* Logo Horizontal Container */
+.logo-container-horizontal {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+}
+
+.logo-container-horizontal::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: -12px;
+  right: -12px;
+  bottom: -6px;
+  background: linear-gradient(135deg, rgba(20, 71, 230, 0.08), rgba(20, 71, 230, 0.03));
+  border-radius: 12px;
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: -1;
+}
+
+.logo-container-horizontal:hover::before {
+  opacity: 1;
+  transform: scale(1.02);
+}
+
+/* Subtle background pattern */
+.login-background {
+  background-image: 
+    radial-gradient(circle at 1px 1px, rgba(20, 71, 230, 0.15) 1px, transparent 0);
+  background-size: 20px 20px;
+}
+
+/* Form focus enhancements */
+.form-input:focus {
+  box-shadow: 0 0 0 3px rgba(20, 71, 230, 0.1);
+}
+
+/* Brand text gradient effect */
+.brand-title {
+  background: linear-gradient(135deg, #1447E6, #0F3CC9);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .login-container {
+    margin: 1rem;
+    padding: 1.5rem;
+  }
+  
+  /* Mobile: Logo más pequeño para mejor proporción */
+  .logo-container-horizontal img {
+    height: 3rem; /* 48px */
+    max-width: 200px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+  /* Tablet: Tamaño intermedio */
+  .logo-container-horizontal img {
+    height: 4rem; /* 64px */
+    max-width: 240px;
+  }
+}
+
+@media (min-width: 769px) {
+  /* Desktop: Tamaño completo pero controlado */
+  .logo-container-horizontal img {
+    height: 5rem; /* 80px */
+    max-width: 280px;
+  }
+}
+
+/* Loading animation enhancement */
+.form-loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Error animation */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.error-shake {
+  animation: shake 0.5s ease-in-out;
+}

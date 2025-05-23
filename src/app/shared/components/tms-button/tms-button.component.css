@@ -2,6 +2,12 @@
   display: inline-block;
 }
 
+/* Cuando el botón es fullWidth, el host también debe ocupar todo el ancho */
+:host(.full-width) {
+  display: block;
+  width: 100%;
+}
+
 /* Solo el spinner animation ya que es específico del componente */
 .spinner {
   border: 2px solid rgba(0, 0, 0, 0.1);
