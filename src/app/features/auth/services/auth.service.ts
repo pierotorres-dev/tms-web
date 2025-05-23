@@ -80,8 +80,7 @@ export class AuthService {
             credentials,
             { showErrorNotification: false } // Manejamos los errores específicamente en el componente
         ).pipe(
-            tap(response => {
-                // Si el usuario tiene múltiples empresas, se redirigirá a la selección
+            tap(response => {                // Si el usuario tiene múltiples empresas, se redirigirá a la selección
                 if (response.empresas && response.empresas.length > 1) {
                     // Guardamos el token de sesión temporal
                     localStorage.setItem(TOKEN_STORAGE.SESSION_TOKEN, response.sessionToken);
@@ -92,6 +91,8 @@ export class AuthService {
                         name: response.name,
                         lastName: response.lastName
                     }));
+                    // Guardamos las empresas disponibles para la selección
+                    localStorage.setItem(TOKEN_STORAGE.EMPRESAS_LIST, JSON.stringify(response.empresas));
 
                     this.notificationService.success(`Bienvenido, ${response.name}. Por favor seleccione una empresa.`);
                 } else if (response.empresas && response.empresas.length === 1) {
@@ -305,6 +306,42 @@ export class AuthService {
     }
 
     /**
+     * Obtiene la información de la empresa seleccionada
+     */
+    getSelectedEmpresa(): EmpresaInfo | null {
+        if (isPlatformBrowser(this.platformId)) {
+            const storedEmpresa = localStorage.getItem(TOKEN_STORAGE.SELECTED_EMPRESA);
+            if (storedEmpresa) {
+                try {
+                    return JSON.parse(storedEmpresa);
+                } catch (error) {
+                    console.error('Error parsing selected empresa data:', error);
+                    return null;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Obtiene la lista de empresas disponibles
+     */
+    getAvailableEmpresas(): EmpresaInfo[] {
+        if (isPlatformBrowser(this.platformId)) {
+            const storedEmpresas = localStorage.getItem(TOKEN_STORAGE.EMPRESAS_LIST);
+            if (storedEmpresas) {
+                try {
+                    return JSON.parse(storedEmpresas);
+                } catch (error) {
+                    console.error('Error parsing empresas list:', error);
+                    return [];
+                }
+            }
+        }
+        return [];
+    }
+
+    /**
      * Cierra la sesión del usuario
      */
     logout(): void {
@@ -312,9 +349,7 @@ export class AuthService {
             this.clearSession();
         }
         this.router.navigate(['/auth/login']);
-    }
-
-    /**
+    }    /**
      * Limpia los datos de sesión del localStorage
      */
     private clearSession(): void {
@@ -323,6 +358,7 @@ export class AuthService {
             localStorage.removeItem(TOKEN_STORAGE.SESSION_TOKEN);
             localStorage.removeItem(TOKEN_STORAGE.USER_DATA);
             localStorage.removeItem(TOKEN_STORAGE.SELECTED_EMPRESA);
+            localStorage.removeItem(TOKEN_STORAGE.EMPRESAS_LIST);
         }
         this.userSessionSubject.next(null);
     }

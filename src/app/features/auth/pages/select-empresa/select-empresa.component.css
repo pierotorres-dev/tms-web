@@ -2,4 +2,95 @@
   display: block;
 }
 
-/* Additional custom styles for select empresa can be added here */
+/* Animaciones para la carga */
+.company-card {
+  transition: all 0.2s ease-in-out;
+  border: 2px solid transparent;
+}
+
+.company-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #3b82f6;
+}
+
+.company-card:active {
+  transform: translateY(0);
+}
+
+/* Efecto de carga para los botones */
+.company-card:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Animación de entrada para las tarjetas */
+.company-list {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Estilo para el contador de empresas */
+.company-counter {
+  background: linear-gradient(45deg, #3b82f6, #1d4ed8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 600;
+}
+
+/* Mejora del spinner de carga */
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Animación para mensajes de error */
+.error-message {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-5px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+/* Hover effects mejorados */
+.company-card:hover .text-tms-primary {
+  transform: translateX(3px);
+  transition: transform 0.2s ease-in-out;
+}

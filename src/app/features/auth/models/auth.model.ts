@@ -16,6 +16,8 @@ export interface LoginResponse {
 
 export interface EmpresaInfo {
   id: number;
+  nombre: string;
+  email: string;
 }
 
 export interface RegisterRequest {

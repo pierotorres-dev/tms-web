@@ -16,5 +16,6 @@ export const TOKEN_STORAGE = {
   AUTH_TOKEN: 'tms_auth_token',
   SESSION_TOKEN: 'tms_session_token',
   USER_DATA: 'tms_user_data',
-  SELECTED_EMPRESA: 'tms_selected_empresa'
+  SELECTED_EMPRESA: 'tms_selected_empresa',
+  EMPRESAS_LIST: 'tms_empresas_list'
 };
