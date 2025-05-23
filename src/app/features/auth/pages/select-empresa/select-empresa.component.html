@@ -1,0 +1,56 @@
+<div class="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">  <div class="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-card">
+    <div class="text-center">
+      <h2 class="mt-6 text-3xl font-bold text-tms-secondary">Seleccionar Empresa</h2>
+      <p class="mt-2 text-sm text-gray-600">Seleccione la empresa con la que desea trabajar</p>
+    </div>
+    
+    <div *ngIf="loading" class="flex justify-center my-8">
+      <svg class="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+    </div>
+    
+    <div *ngIf="!loading && empresas.length > 0" class="mt-8 space-y-4">
+      <div class="grid grid-cols-1 gap-4">
+        <button
+          *ngFor="let empresa of empresas"
+          (click)="selectEmpresa(empresa.id)"
+          class="flex items-center justify-between px-4 py-3 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          <div>
+            <p class="text-sm font-medium text-gray-900">Empresa {{ empresa.id }}</p>
+          </div>          <div class="text-tms-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </button>
+      </div>
+      
+      <div class="pt-4">
+        <button 
+          (click)="logout()" 
+          class="w-full text-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+        >
+          Cerrar Sesión
+        </button>
+      </div>
+    </div>
+    
+    <div *ngIf="!loading && empresas.length === 0" class="mt-8 text-center">
+      <p class="text-red-500">No se encontraron empresas asociadas a su cuenta.</p>
+      <button 
+        (click)="logout()" 
+        class="mt-4 w-full text-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+      >
+        Cerrar Sesión
+      </button>
+    </div>
+    
+    <!-- Error message -->
+    <div *ngIf="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mt-4" role="alert">
+      <span class="block sm:inline">{{ error }}</span>
+    </div>
+  </div>
+</div>
