@@ -24,12 +24,12 @@ export class TmsButtonComponent {
       'sm': 'py-1.5 px-3 text-xs',
       'md': 'py-2.5 px-4 text-sm',
       'lg': 'py-3 px-6 text-base'
-    }[this.size];    // Variant classes con clases CSS personalizadas para colores TMS
+    }[this.size];    // Variant classes usando las nuevas clases de Tailwind v4
     const variantClasses = {
-      'primary': 'text-white btn-tms-primary hover:bg-blue-700 hover:border-blue-700 focus:ring-blue-500 disabled:bg-gray-300 disabled:border-gray-300 disabled:cursor-not-allowed',
-      'secondary': 'text-white btn-tms-secondary hover:bg-gray-700 hover:border-gray-700 focus:ring-gray-500 disabled:bg-gray-300 disabled:border-gray-300 disabled:cursor-not-allowed',
-      'accent': 'text-white btn-tms-accent hover:bg-red-700 hover:border-red-700 focus:ring-red-500 disabled:bg-gray-300 disabled:border-gray-300 disabled:cursor-not-allowed',
-      'outline': 'text-blue-600 bg-white border-blue-600 hover:bg-blue-600 hover:text-white focus:ring-blue-500 disabled:text-gray-400 disabled:border-gray-300 disabled:cursor-not-allowed'
+      'primary': 'text-white bg-tms-primary border-tms-primary hover:bg-tms-primary-hover hover:border-tms-primary-hover focus:ring-tms-primary-ring disabled:bg-gray-300 disabled:border-gray-300 disabled:cursor-not-allowed shadow-button',
+      'secondary': 'text-white bg-tms-secondary border-tms-secondary hover:bg-tms-secondary-hover hover:border-tms-secondary-hover focus:ring-gray-500 disabled:bg-gray-300 disabled:border-gray-300 disabled:cursor-not-allowed shadow-button',
+      'accent': 'text-white bg-tms-accent border-tms-accent hover:bg-tms-accent-hover hover:border-tms-accent-hover focus:ring-red-500 disabled:bg-gray-300 disabled:border-gray-300 disabled:cursor-not-allowed shadow-button',
+      'outline': 'text-tms-primary bg-white border-tms-primary hover:bg-tms-primary hover:text-white focus:ring-tms-primary-ring disabled:text-gray-400 disabled:border-gray-300 disabled:cursor-not-allowed'
     }[this.variant];
 
     // Width class

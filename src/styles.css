@@ -1,1 +1,70 @@
-@import 'tailwindcss';
+@import "tailwindcss";
+
+@theme {
+  /* TMS Design System Colors */
+  --color-tms-primary: #1447E6;
+  --color-tms-primary-hover: #0f3aa3;
+  --color-tms-primary-light: rgba(20, 71, 230, 0.1);
+  --color-tms-primary-ring: rgba(20, 71, 230, 0.5);
+  
+  --color-tms-secondary: #6B7280;
+  --color-tms-secondary-hover: #4B5563;
+  
+  --color-tms-accent: #DC2626;
+  --color-tms-accent-hover: #B91C1C;
+  
+  --color-tms-success: #059669;
+  --color-tms-warning: #D97706;
+  --color-tms-error: #DC2626;
+  
+  /* Typography */
+  --font-family-display: "Inter", "system-ui", "sans-serif";
+  
+  /* Shadows */
+  --shadow-card: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-button: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  
+  /* Animations */
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  
+  /* Breakpoints personalizados */
+  --breakpoint-3xl: 1600px;
+}
+
+/* Custom utilities */
+@layer utilities {
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  
+  .shadow-button {
+    box-shadow: var(--shadow-button);
+  }
+}
+
+/* Base styles */
+@layer base {
+  body {
+    font-family: var(--font-family-display);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Mejores estilos para formularios */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  textarea,
+  select {
+    @apply transition-all duration-200 ease-smooth;
+  }
+  
+  /* Estados de focus mejorados */
+  input:focus,
+  textarea:focus,
+  select:focus {
+    @apply ring-2 ring-offset-2;
+  }
+}

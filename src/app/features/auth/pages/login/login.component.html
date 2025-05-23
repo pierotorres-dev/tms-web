@@ -5,21 +5,38 @@
       <p class="mt-2 text-sm text-gray-600">Sistema de Gestión de Neumáticos</p>
     </div>
 
-    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="mt-8 space-y-6">
-      <div class="rounded-md -space-y-px">
-        <div class="mb-4">
-          <label for="username" class="sr-only">Usuario</label>          <input id="username" name="username" type="text" formControlName="userName" required
-            class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-tms-primary focus:border-tms-primary focus:z-10 sm:text-sm"
-            placeholder="Usuario" />
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="mt-8 space-y-6">      <div class="space-y-4">
+        <div>
+          <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
+          <input 
+            id="username" 
+            name="username" 
+            type="text" 
+            formControlName="userName" 
+            required
+            class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-tms-primary focus:border-tms-primary transition-colors duration-200 sm:text-sm"
+            placeholder="Ingrese su usuario" 
+            [class.border-red-500]="submitted && f['userName'].errors"
+            [class.focus:border-red-500]="submitted && f['userName'].errors"
+            [class.focus:ring-red-500]="submitted && f['userName'].errors" />
           <div *ngIf="submitted && f['userName'].errors" class="text-red-500 text-xs mt-1">
             <div *ngIf="f['userName'].errors['required']">Usuario es obligatorio</div>
           </div>
         </div>
 
         <div>
-          <label for="password" class="sr-only">Contraseña</label>          <input id="password" name="password" type="password" formControlName="password" required
-            class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-tms-primary focus:border-tms-primary focus:z-10 sm:text-sm"
-            placeholder="Contraseña" />
+          <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+          <input 
+            id="password" 
+            name="password" 
+            type="password" 
+            formControlName="password" 
+            required
+            class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-tms-primary focus:border-tms-primary transition-colors duration-200 sm:text-sm"
+            placeholder="Ingrese su contraseña" 
+            [class.border-red-500]="submitted && f['password'].errors"
+            [class.focus:border-red-500]="submitted && f['password'].errors"
+            [class.focus:ring-red-500]="submitted && f['password'].errors" />
           <div *ngIf="submitted && f['password'].errors" class="text-red-500 text-xs mt-1">
             <div *ngIf="f['password'].errors['required']">Contraseña es obligatoria</div>
           </div>
@@ -32,10 +49,8 @@
           <label for="remember_me" class="ml-2 block text-sm text-gray-900">
             Recordarme
           </label>
-        </div>
-
-        <div class="text-sm">
-          <a href="#" class="font-medium text-tms-primary hover:text-blue-600">
+        </div>        <div class="text-sm">
+          <a href="#" class="font-medium text-tms-primary hover:text-tms-primary-hover transition-colors duration-200">
             ¿Olvidó su contraseña?
           </a>
         </div>
@@ -50,11 +65,14 @@
           (buttonClick)="onSubmit()">
           Iniciar Sesión
         </app-tms-button>
-      </div>
-
-      <!-- Error message -->
-      <div *ngIf="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-        <span class="block sm:inline">{{ error }}</span>
+      </div>      <!-- Error message -->
+      <div *ngIf="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg relative animate-pulse" role="alert">
+        <div class="flex items-center">
+          <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+          </svg>
+          <span class="block sm:inline">{{ error }}</span>
+        </div>
       </div>
     </form>
   </div>
