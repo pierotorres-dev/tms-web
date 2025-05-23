@@ -2,14 +2,14 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { SharedModule } from '../../../../shared/shared.module';
+import { TmsButtonComponent } from '../../../../shared/components/tms-button/tms-button.component';
 import { AuthService } from '../../services/auth.service';
 import { LoginRequest } from '../../models/auth.model';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, SharedModule],
+  imports: [CommonModule, ReactiveFormsModule, TmsButtonComponent],
   templateUrl: './login.component.html',
   styleUrl: './login.component.css'
 })

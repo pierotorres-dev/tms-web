@@ -1,38 +1,25 @@
-<div class="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">  <div class="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-card">
+<div class="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-card">
     <div class="text-center">
       <h2 class="mt-6 text-3xl font-bold text-tms-secondary">TMS</h2>
       <p class="mt-2 text-sm text-gray-600">Sistema de Gestión de Neumáticos</p>
     </div>
-    
+
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="mt-8 space-y-6">
       <div class="rounded-md -space-y-px">
         <div class="mb-4">
-          <label for="username" class="sr-only">Usuario</label>
-          <input 
-            id="username" 
-            name="username" 
-            type="text" 
-            formControlName="userName" 
-            required 
-            class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm" 
-            placeholder="Usuario"
-          />
+          <label for="username" class="sr-only">Usuario</label>          <input id="username" name="username" type="text" formControlName="userName" required
+            class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-tms-primary focus:border-tms-primary focus:z-10 sm:text-sm"
+            placeholder="Usuario" />
           <div *ngIf="submitted && f['userName'].errors" class="text-red-500 text-xs mt-1">
             <div *ngIf="f['userName'].errors['required']">Usuario es obligatorio</div>
           </div>
         </div>
-        
+
         <div>
-          <label for="password" class="sr-only">Contraseña</label>
-          <input 
-            id="password" 
-            name="password" 
-            type="password" 
-            formControlName="password" 
-            required 
-            class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm" 
-            placeholder="Contraseña"
-          />
+          <label for="password" class="sr-only">Contraseña</label>          <input id="password" name="password" type="password" formControlName="password" required
+            class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-tms-primary focus:border-tms-primary focus:z-10 sm:text-sm"
+            placeholder="Contraseña" />
           <div *ngIf="submitted && f['password'].errors" class="text-red-500 text-xs mt-1">
             <div *ngIf="f['password'].errors['required']">Contraseña es obligatoria</div>
           </div>
@@ -40,41 +27,31 @@
       </div>
 
       <div class="flex items-center justify-between">
-        <div class="flex items-center">
-          <input 
-            id="remember_me" 
-            name="remember_me" 
-            type="checkbox" 
-            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-          />
+        <div class="flex items-center">          <input id="remember_me" name="remember_me" type="checkbox"
+            class="h-4 w-4 text-tms-primary focus:ring-tms-primary border-gray-300 rounded" />
           <label for="remember_me" class="ml-2 block text-sm text-gray-900">
             Recordarme
           </label>
         </div>
 
         <div class="text-sm">
-          <a href="#" class="font-medium text-blue-600 hover:text-blue-500">
+          <a href="#" class="font-medium text-tms-primary hover:text-blue-600">
             ¿Olvidó su contraseña?
           </a>
         </div>
+      </div>      <div>
+        <app-tms-button 
+          type="submit" 
+          [disabled]="loading"
+          [loading]="loading"
+          variant="primary"
+          size="md"
+          [fullWidth]="true"
+          (buttonClick)="onSubmit()">
+          Iniciar Sesión
+        </app-tms-button>
       </div>
 
-      <div>        <button 
-          type="submit" 
-          [disabled]="loading" 
-          class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-tms-primary hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400"
-        >
-          <span *ngIf="loading" class="absolute left-0 inset-y-0 flex items-center pl-3">
-            <!-- Spinner icon -->
-            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-          </span>
-          Iniciar Sesión
-        </button>
-      </div>
-      
       <!-- Error message -->
       <div *ngIf="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
         <span class="block sm:inline">{{ error }}</span>

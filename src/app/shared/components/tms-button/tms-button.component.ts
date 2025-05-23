@@ -16,29 +16,29 @@ export class TmsButtonComponent {
   @Input() size: 'sm' | 'md' | 'lg' = 'md';
   @Input() fullWidth = false;
   @Output() buttonClick = new EventEmitter<Event>();
-
   get classes(): string {
-    const baseClasses = 'group relative flex justify-center items-center border border-transparent font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2';
-    
+    const baseClasses = 'group relative flex justify-center items-center border font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 ease-in-out';
+
     // Size classes
     const sizeClasses = {
-      'sm': 'py-1 px-3 text-xs',
-      'md': 'py-2 px-4 text-sm',
+      'sm': 'py-1.5 px-3 text-xs',
+      'md': 'py-2.5 px-4 text-sm',
       'lg': 'py-3 px-6 text-base'
-    }[this.size];
-    
-    // Variant classes
+    }[this.size];    // Variant classes con clases CSS personalizadas para colores TMS
     const variantClasses = {
-      'primary': 'text-white bg-tms-primary hover:bg-blue-700 focus:ring-blue-500 disabled:bg-blue-300',
-      'secondary': 'text-white bg-tms-secondary hover:bg-gray-700 focus:ring-gray-500 disabled:bg-gray-300',
-      'accent': 'text-white bg-tms-accent hover:bg-red-600 focus:ring-red-500 disabled:bg-red-300',
-      'outline': 'text-tms-primary bg-white border-tms-primary hover:bg-gray-50 focus:ring-blue-500 disabled:text-gray-400 disabled:border-gray-300'
+      'primary': 'text-white btn-tms-primary hover:bg-blue-700 hover:border-blue-700 focus:ring-blue-500 disabled:bg-gray-300 disabled:border-gray-300 disabled:cursor-not-allowed',
+      'secondary': 'text-white btn-tms-secondary hover:bg-gray-700 hover:border-gray-700 focus:ring-gray-500 disabled:bg-gray-300 disabled:border-gray-300 disabled:cursor-not-allowed',
+      'accent': 'text-white btn-tms-accent hover:bg-red-700 hover:border-red-700 focus:ring-red-500 disabled:bg-gray-300 disabled:border-gray-300 disabled:cursor-not-allowed',
+      'outline': 'text-blue-600 bg-white border-blue-600 hover:bg-blue-600 hover:text-white focus:ring-blue-500 disabled:text-gray-400 disabled:border-gray-300 disabled:cursor-not-allowed'
     }[this.variant];
-    
+
     // Width class
     const widthClass = this.fullWidth ? 'w-full' : '';
-    
-    return `${baseClasses} ${sizeClasses} ${variantClasses} ${widthClass}`;
+
+    // Loading state classes
+    const loadingClasses = this.loading ? 'cursor-wait' : '';
+
+    return `${baseClasses} ${sizeClasses} ${variantClasses} ${widthClass} ${loadingClasses}`.trim();
   }
 
   onClick(event: Event): void {

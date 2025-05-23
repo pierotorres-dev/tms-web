@@ -12,3 +12,28 @@
     transform: rotate(360deg);
   }
 }
+
+/* Clases personalizadas TMS */
+.btn-tms-primary {
+  background-color: #1447E6 !important;
+  border-color: #1447E6 !important;
+}
+
+.btn-tms-primary:hover:not(:disabled) {
+  background-color: #0f3aa3 !important;
+  border-color: #0f3aa3 !important;
+}
+
+.btn-tms-primary:focus {
+  --tw-ring-color: rgba(20, 71, 230, 0.5) !important;
+}
+
+.btn-tms-secondary {
+  background-color: #6B7280 !important;
+  border-color: #6B7280 !important;
+}
+
+.btn-tms-accent {
+  background-color: #DC2626 !important;
+  border-color: #DC2626 !important;
+}
