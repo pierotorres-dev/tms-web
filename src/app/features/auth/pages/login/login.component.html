@@ -1,24 +1,25 @@
 <div class="min-h-screen bg-gray-100 login-background flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
   <div class="max-w-md w-full bg-white p-8 sm:p-10 rounded-xl shadow-card login-container"
-    [class.form-loading]="loading">    <!-- Branding Section -->
-    <div class="text-center space-y-6 mb-8">
-      <!-- Logo Horizontal -->
+    [class.form-loading]="loading"> <!-- Branding Section -->
+    <div class="text-center space-y-6 mb-8"> <!-- Logo Horizontal -->
       <div class="flex justify-center">
         <div class="logo-container-horizontal">
-          <img 
-            src="assets/images/branding/logo-tms.png" 
-            alt="TMS - Sistema de Gestión de Neumáticos | Dlirio Tyre"
-            class="h-14 w-auto sm:h-16 md:h-20 max-w-full object-contain transition-all duration-300 hover:scale-105"
-            loading="eager" 
-            onerror="console.error('Error loading logo:', this.src)" 
-          />
+          <img src="assets/images/branding/logo-tms-hor.png" alt="TMS - Sistema de Gestión de Neumáticos | Dlirio Tyre"
+            class="h-10 w-auto sm:h-14 md:h-18 max-w-full object-contain transition-all duration-300 hover:scale-105"
+            loading="eager" onerror="console.error('Error loading logo:', this.src)" />
         </div>
       </div>
-      
-      <!-- Subtitle (solo si necesitas información adicional) -->
-      <div>
-        <p class="text-sm text-gray-600 font-medium">
+
+      <!-- Subtitle descriptivo simplificado -->
+      <div class="space-y-2">
+        <h1 class="text-3xl sm:text-4xl font-bold brand-title tracking-tight">
+          TMS
+        </h1>
+        <p class="text-sm sm:text-base text-gray-600 font-medium">
           Sistema de Gestión de Neumáticos
+        </p>
+        <p class="text-xs text-gray-500 font-medium">
+          Powered by Dlirio Tyre
         </p>
       </div>
     </div>

@@ -80,25 +80,25 @@
     padding: 1.5rem;
   }
   
-  /* Mobile: Logo más pequeño para mejor proporción */
+  /* Mobile: Logo horizontal optimizado para legibilidad */
   .logo-container-horizontal img {
-    height: 3rem; /* 48px */
-    max-width: 200px;
+    height: 2.5rem; /* 40px - Más compacto que antes */
+    max-width: 180px;
   }
 }
 
 @media (min-width: 641px) and (max-width: 768px) {
-  /* Tablet: Tamaño intermedio */
+  /* Tablet: Tamaño balanceado */
   .logo-container-horizontal img {
-    height: 4rem; /* 64px */
-    max-width: 240px;
+    height: 3.5rem; /* 56px - Perfecto para tablets */
+    max-width: 220px;
   }
 }
 
 @media (min-width: 769px) {
-  /* Desktop: Tamaño completo pero controlado */
+  /* Desktop: Presencia de marca óptima sin ser dominante */
   .logo-container-horizontal img {
-    height: 5rem; /* 80px */
+    height: 4.5rem; /* 72px - Reducido significativamente del original 80px */
     max-width: 280px;
   }
 }

@@ -4,7 +4,8 @@ import { RouterModule } from '@angular/router';
 import { AuthService } from '../../../features/auth/services/auth.service';
 import { ClickOutsideDirective } from '../../../shared/directives/click-outside.directive';
 
-@Component({  selector: 'app-header',
+@Component({
+  selector: 'app-header',
   standalone: true,
   imports: [CommonModule, RouterModule, ClickOutsideDirective],
   template: `
@@ -84,13 +85,13 @@ import { ClickOutsideDirective } from '../../../shared/directives/click-outside.
 })
 export class HeaderComponent {
   private authService = inject(AuthService);
-  
+
   @Output() sidebarToggle = new EventEmitter<void>();
-  
+
   userName = '';
   userRole = '';
   isUserMenuOpen = false;
-  
+
   ngOnInit(): void {
     this.authService.userSession$.subscribe(
       session => {
@@ -101,11 +102,11 @@ export class HeaderComponent {
       }
     );
   }
-  
+
   toggleSidebar(): void {
     this.sidebarToggle.emit();
   }
-  
+
   logout(): void {
     this.isUserMenuOpen = false;
     this.authService.logout();
