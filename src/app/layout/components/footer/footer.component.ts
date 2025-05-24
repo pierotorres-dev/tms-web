@@ -13,7 +13,7 @@ import { CommonModule } from '@angular/common';
             &copy; {{ currentYear }} TMS - Todos los derechos reservados
           </div>
           <div class="text-sm text-gray-500">
-            Desarrollado por Dlirio Tech
+            Powered by Dlirio Tyre
           </div>
         </div>
       </div>

@@ -1,0 +1,543 @@
+openapi: 3.0.3
+info:
+  title: Fleet Service API
+  description: API para gestión de equipos, observaciones y catálogos del sistema de flota
+  version: 1.0.0
+  contact:
+    name: DLirio Tech
+servers:
+  - url: /
+    description: Servidor local
+tags:
+  - name: Catálogos
+    description: Operaciones con catálogos del sistema
+  - name: Equipos
+    description: Operaciones con equipos
+  - name: Observaciones
+    description: Operaciones con observaciones de equipos
+paths:
+  /api/v1/catalogos/tipo-observacion-neumatico:
+    get:
+      tags:
+        - Catálogos
+      summary: Obtiene todos los tipos de observación de neumático
+      operationId: getAllTipoObservacionNeumatico
+      responses:
+        '200':
+          description: Lista de tipos de observación de neumático
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TipoObservacionNeumaticoResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/v1/catalogos/estado-observacion:
+    get:
+      tags:
+        - Catálogos
+      summary: Obtiene todos los estados de observación
+      operationId: getAllEstadoObservacion
+      responses:
+        '200':
+          description: Lista de estados de observación
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EstadoObservacionResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/v1/catalogos/estado-equipo:
+    get:
+      tags:
+        - Catálogos
+      summary: Obtiene todos los estados de equipo
+      operationId: getAllEstadoEquipo
+      responses:
+        '200':
+          description: Lista de estados de equipo
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EstadoEquipoResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/v1/equipos/empresa/{empresaId}:
+    get:
+      tags:
+        - Equipos
+      summary: Obtiene todos los equipos por empresa
+      operationId: getAllEquiposByEmpresaId
+      parameters:
+        - name: empresaId
+          in: path
+          description: ID de la empresa
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Lista de equipos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EquipoResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/v1/equipos/{id}:
+    get:
+      tags:
+        - Equipos
+      summary: Obtiene un equipo por su ID
+      operationId: getEquipoById
+      parameters:
+        - name: id
+          in: path
+          description: ID del equipo
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Equipo encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipoResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+    put:
+      tags:
+        - Equipos
+      summary: Actualiza un equipo existente
+      operationId: updateEquipo
+      parameters:
+        - name: id
+          in: path
+          description: ID del equipo
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        description: Datos del equipo a actualizar
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EquipoRequest'
+      responses:
+        '200':
+          description: Equipo actualizado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipoResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/v1/equipos:
+    post:
+      tags:
+        - Equipos
+      summary: Registra un nuevo equipo
+      operationId: saveEquipo
+      requestBody:
+        description: Datos del nuevo equipo
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EquipoRequest'
+      responses:
+        '201':
+          description: Equipo creado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipoResponse'
+        '400':
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Placa duplicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/v1/equipos/{id}/estado/{estadoId}:
+    patch:
+      tags:
+        - Equipos
+      summary: Actualiza el estado de un equipo
+      operationId: updateEstadoEquipo
+      parameters:
+        - name: id
+          in: path
+          description: ID del equipo
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - name: estadoId
+          in: path
+          description: ID del nuevo estado
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Estado del equipo actualizado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EquipoResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/v1/observaciones-equipo/equipo/{equipoId}:
+    get:
+      tags:
+        - Observaciones
+      summary: Obtiene todas las observaciones de un equipo
+      operationId: getAllObservacionesByEquipoId
+      parameters:
+        - name: equipoId
+          in: path
+          description: ID del equipo
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Lista de observaciones del equipo
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ObservacionEquipoResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/v1/observaciones-equipo:
+    post:
+      tags:
+        - Observaciones
+      summary: Registra una nueva observación de equipo
+      operationId: saveObservacion
+      requestBody:
+        description: Datos de la nueva observación
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ObservacionEquipoRequest'
+      responses:
+        '201':
+          description: Observación creada correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservacionEquipoResponse'
+        '400':
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/v1/observaciones-equipo/{id}:
+    put:
+      tags:
+        - Observaciones
+      summary: Actualiza una observación existente
+      operationId: updateObservacion
+      parameters:
+        - name: id
+          in: path
+          description: ID de la observación
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        description: Datos de la observación a actualizar
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ObservacionEquipoRequest'
+      responses:
+        '200':
+          description: Observación actualizada correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservacionEquipoResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/v1/observaciones-equipo/equipo/{equipoId}/estado/{estadoId}:
+    patch:
+      tags:
+        - Observaciones
+      summary: Actualiza el estado de todas las observaciones de un equipo
+      operationId: updateEstadoObservacionesByEquipoId
+      parameters:
+        - name: equipoId
+          in: path
+          description: ID del equipo
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - name: estadoId
+          in: path
+          description: ID del nuevo estado
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Número de observaciones actualizadas
+          content:
+            application/json:
+              schema:
+                type: integer
+                format: int32
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+
+components:
+  schemas:
+    TipoObservacionNeumaticoResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        nombre:
+          type: string
+        descripcion:
+          type: string
+        activo:
+          type: boolean
+      required:
+        - id
+        - nombre
+
+    EstadoObservacionResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        nombre:
+          type: string
+        descripcion:
+          type: string
+      required:
+        - id
+        - nombre
+
+    EstadoEquipoResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        nombre:
+          type: string
+        descripcion:
+          type: string
+      required:
+        - id
+        - nombre
+
+    EquipoRequest:
+      type: object
+      properties:
+        placa:
+          type: string
+        negocio:
+          type: string
+        equipo:
+          type: string
+        fechaInspeccion:
+          type: string
+          format: date-time
+        kilometraje:
+          type: number
+          format: double
+        estadoId:
+          type: integer
+          format: int32
+        empresaId:
+          type: integer
+          format: int32
+      required:
+        - placa
+        - estadoId
+        - empresaId
+
+    EquipoResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        placa:
+          type: string
+        negocio:
+          type: string
+        equipo:
+          type: string
+        fechaInspeccion:
+          type: string
+          format: date-time
+        kilometraje:
+          type: number
+          format: double
+        estadoEquipoResponse:
+          $ref: '#/components/schemas/EstadoEquipoResponse'
+        empresaId:
+          type: integer
+          format: int32
+      required:
+        - id
+        - placa
+        - estadoEquipoResponse
+        - empresaId
+
+    ObservacionEquipoRequest:
+      type: object
+      properties:
+        equipoId:
+          type: integer
+          format: int32
+        fecha:
+          type: string
+          format: date-time
+        tipoObservacionId:
+          type: integer
+          format: int32
+        descripcion:
+          type: string
+        estadoId:
+          type: integer
+          format: int32
+        fechaResolucion:
+          type: string
+          format: date-time
+        comentarioResolucion:
+          type: string
+        usuarioResolucion:
+          type: string
+        usuarioId:
+          type: integer
+          format: int32
+      required:
+        - equipoId
+        - tipoObservacionId
+        - estadoId
+
+    ObservacionEquipoResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        equipoId:
+          type: integer
+          format: int32
+        fecha:
+          type: string
+          format: date-time
+        tipoObservacionNeumaticoResponse:
+          $ref: '#/components/schemas/TipoObservacionNeumaticoResponse'
+        descripcion:
+          type: string
+        estadoObservacionResponse:
+          $ref: '#/components/schemas/EstadoObservacionResponse'
+        fechaResolucion:
+          type: string
+          format: date-time
+        comentarioResolucion:
+          type: string
+        usuarioResolucion:
+          type: string
+        usuarioId:
+          type: integer
+          format: int32
+      required:
+        - id
+        - equipoId
+        - fecha
+        - tipoObservacionNeumaticoResponse
+        - estadoObservacionResponse
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+      required:
+        - code
+        - message
+        - timestamp
+        - path
+
+  responses:
+    ErrorResponse:
+      description: Error en la operación
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFoundResponse:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

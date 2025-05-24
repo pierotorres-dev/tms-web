@@ -1,21 +1,55 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Routes } from '@angular/router';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+
+import { EquipoListComponent } from './pages/equipo-list/equipo-list.component';
+import { EquipoFormComponent } from './components/equipo-form/equipo-form.component';
+
+// Services
+import { FleetService } from './services/fleet.service';
+import { EquiposService } from './services/equipos.service';
+import { ObservacionesService } from './services/observaciones.service';
 
 const routes: Routes = [
   {
     path: '',
-    redirectTo: 'lista',
-    pathMatch: 'full'
+    component: EquipoListComponent
   },
-  // Aquí irán las rutas para los componentes de equipos
+  {
+    path: 'nuevo',
+    component: EquipoFormComponent
+  },
+  {
+    path: 'editar/:id',
+    component: EquipoFormComponent
+  },
+  {
+    path: 'detalle/:id',
+    component: EquipoFormComponent
+  },
+  {
+    path: '**',
+    redirectTo: ''
+  }
 ];
 
 @NgModule({
-  declarations: [],
-  imports: [
+  declarations: [],  imports: [
     CommonModule,
-    RouterModule.forChild(routes)
+    FormsModule,
+    ReactiveFormsModule,
+    RouterModule.forChild(routes),
+    // Import standalone components
+    EquipoListComponent,
+    EquipoFormComponent
+  ],
+  providers: [
+    // Services are provided automatically with 'providedIn: root'
+    // but we include them here for explicit control and documentation
+    FleetService,
+    EquiposService,
+    ObservacionesService
   ]
 })
 export class EquiposModule { }

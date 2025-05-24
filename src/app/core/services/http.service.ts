@@ -72,6 +72,21 @@ export class HttpService {
       catchError(error => this.handleError(error, { showErrorNotification }))
     );
   }
+  /**
+   * Realiza una petición PATCH
+   */
+  patch<T>(url: string, body: any, options?: HttpOptions): Observable<T> {
+    const { showErrorNotification, ...httpOptions } = options || {};
+    
+    const finalOptions = { 
+      ...httpOptions, 
+      observe: 'body' as const 
+    };
+    
+    return this.http.patch<T>(url, body, finalOptions).pipe(
+      catchError(error => this.handleError(error, { showErrorNotification }))
+    );
+  }
 
   /**
    * Realiza una petición DELETE
