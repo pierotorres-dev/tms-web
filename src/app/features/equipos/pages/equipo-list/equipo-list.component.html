@@ -1,18 +1,21 @@
 <!-- Encabezado de página -->
 <div class="mb-8">
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-    <div>
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">    <div>
       <h1 class="text-2xl font-bold text-gray-900 sm:text-3xl">Gestión de Equipos</h1>
       <p class="mt-2 text-sm text-gray-700">
         Administre y monitoree todos los equipos de la empresa
       </p>
+      <p class="mt-1 text-sm text-blue-600" *ngIf="selectedEmpresa">
+        <span class="font-medium">{{ selectedEmpresa.nombre }}</span>
+        <span class="text-gray-500 ml-2">(ID: {{ empresaId }})</span>
+      </p>
     </div>
-    
-    <!-- Botón de nuevo equipo -->
+      <!-- Botón de nuevo equipo -->
     <div class="mt-4 sm:mt-0">
       <app-tms-button 
         variant="primary" 
         size="lg"
+        [disabled]="!empresaId"
         (buttonClick)="onNuevoEquipo()"
         class="w-full sm:w-auto">
         <svg class="mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -11,22 +11,29 @@ import { FleetService } from './services/fleet.service';
 import { EquiposService } from './services/equipos.service';
 import { ObservacionesService } from './services/observaciones.service';
 
+// Guards
+import { EmpresaSelectedGuard } from '../../core/guards/empresa-selected.guard';
+
 const routes: Routes = [
   {
     path: '',
-    component: EquipoListComponent
+    component: EquipoListComponent,
+    canActivate: [EmpresaSelectedGuard]
   },
   {
     path: 'nuevo',
-    component: EquipoFormComponent
+    component: EquipoFormComponent,
+    canActivate: [EmpresaSelectedGuard]
   },
   {
     path: 'editar/:id',
-    component: EquipoFormComponent
+    component: EquipoFormComponent,
+    canActivate: [EmpresaSelectedGuard]
   },
   {
     path: 'detalle/:id',
-    component: EquipoFormComponent
+    component: EquipoFormComponent,
+    canActivate: [EmpresaSelectedGuard]
   },
   {
     path: '**',

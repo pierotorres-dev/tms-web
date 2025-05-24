@@ -38,6 +38,15 @@ export class AuthService {
     private loadingSubject = new BehaviorSubject<boolean>(false);
     loading$ = this.loadingSubject.asObservable();
 
+    // BehaviorSubject para la empresa actualmente seleccionada
+    private selectedEmpresaSubject = new BehaviorSubject<EmpresaInfo | null>(null);
+    selectedEmpresa$ = this.selectedEmpresaSubject.asObservable();
+
+    // Observable para obtener el empresaId de forma reactiva
+    empresaId$ = this.selectedEmpresa$.pipe(
+        map(empresa => empresa?.id || null)
+    );
+
     /**
      * Al inicializar el servicio, intentamos recuperar la sesión del usuario
      * desde el localStorage si existe
@@ -46,21 +55,26 @@ export class AuthService {
         if (isPlatformBrowser(this.platformId)) { // Check if in browser
             this.checkStoredSession();
         }
-    }
-
-    /**
+    }    /**
      * Comprueba si existe una sesión guardada en el localStorage
      */
     private checkStoredSession(): void {
         if (isPlatformBrowser(this.platformId)) { // Check if in browser
             const storedUser = localStorage.getItem(TOKEN_STORAGE.USER_DATA);
             const storedToken = localStorage.getItem(TOKEN_STORAGE.AUTH_TOKEN);
+            const storedEmpresa = localStorage.getItem(TOKEN_STORAGE.SELECTED_EMPRESA);
 
             if (storedUser && storedToken) {
                 try {
                     const userSession: UserSession = JSON.parse(storedUser);
                     userSession.token = storedToken;
                     this.userSessionSubject.next(userSession);
+
+                    // También restaurar la empresa seleccionada si existe
+                    if (storedEmpresa) {
+                        const empresaInfo: EmpresaInfo = JSON.parse(storedEmpresa);
+                        this.selectedEmpresaSubject.next(empresaInfo);
+                    }
                 } catch (error) {
                     // Si hay un error al parsear los datos, limpiamos el localStorage
                     this.clearSession();
@@ -94,12 +108,13 @@ export class AuthService {
                     // Guardamos las empresas disponibles para la selección
                     localStorage.setItem(TOKEN_STORAGE.EMPRESAS_LIST, JSON.stringify(response.empresas));
 
-                    this.notificationService.success(`Bienvenido, ${response.name}. Por favor seleccione una empresa.`);
-                } else if (response.empresas && response.empresas.length === 1) {
+                    this.notificationService.success(`Bienvenido, ${response.name}. Por favor seleccione una empresa.`);                } else if (response.empresas && response.empresas.length === 1) {
                     // Si solo tiene una empresa, generamos el token directamente
                     this.generateToken(response.userId, response.empresas[0].id, response.sessionToken)
                         .subscribe({
                             next: () => {
+                                // Establecer la empresa seleccionada automáticamente
+                                this.setSelectedEmpresa(response.empresas[0]);
                                 this.notificationService.success(`Bienvenido, ${response.name}`);
                             }
                         });
@@ -143,12 +158,10 @@ export class AuthService {
             {
                 params,
                 showErrorNotification: true
-            }
-        ).pipe(
+            }        ).pipe(
             tap(response => {
                 // Recuperamos la información de usuario guardada
                 const storedUser = localStorage.getItem(TOKEN_STORAGE.USER_DATA);
-
                 if (storedUser) {
                     const userData = JSON.parse(storedUser);
 
@@ -159,8 +172,19 @@ export class AuthService {
                         empresaId
                     });
 
-                    // Eliminamos el token de sesión temporal
+                    // Buscar y establecer la información completa de la empresa
+                    const storedEmpresas = localStorage.getItem(TOKEN_STORAGE.EMPRESAS_LIST);
+                    if (storedEmpresas) {
+                        const empresas: EmpresaInfo[] = JSON.parse(storedEmpresas);
+                        const empresaSeleccionada = empresas.find(emp => emp.id === empresaId);
+                        if (empresaSeleccionada) {
+                            this.setSelectedEmpresa(empresaSeleccionada);
+                        }
+                    }
+
+                    // Eliminamos el token de sesión temporal y la lista de empresas
                     localStorage.removeItem(TOKEN_STORAGE.SESSION_TOKEN);
+                    localStorage.removeItem(TOKEN_STORAGE.EMPRESAS_LIST);
 
                     // Redirigimos al dashboard
                     this.router.navigate(['/dashboard']);
@@ -284,6 +308,70 @@ export class AuthService {
             // Actualizamos el BehaviorSubject
             this.userSessionSubject.next(session);
         }
+    }
+
+    /**
+     * Cambia la empresa actualmente seleccionada
+     */
+    selectEmpresa(empresa: EmpresaInfo): void {
+        if (isPlatformBrowser(this.platformId)) { // Check if in browser
+            // Guardamos la empresa seleccionada en el localStorage
+            localStorage.setItem(TOKEN_STORAGE.SELECTED_EMPRESA, JSON.stringify(empresa));
+
+            // Actualizamos el BehaviorSubject de la empresa seleccionada
+            this.selectedEmpresaSubject.next(empresa);
+        }
+    }
+
+    /**
+     * Establece la empresa seleccionada
+     */
+    setSelectedEmpresa(empresa: EmpresaInfo): void {
+        if (isPlatformBrowser(this.platformId)) {
+            localStorage.setItem(TOKEN_STORAGE.SELECTED_EMPRESA, JSON.stringify(empresa));
+            this.selectedEmpresaSubject.next(empresa);
+
+            // También actualizar el empresaId en la sesión del usuario
+            const currentSession = this.userSessionSubject.value;
+            if (currentSession) {
+                const updatedSession = { ...currentSession, empresaId: empresa.id };
+                this.userSessionSubject.next(updatedSession);
+                
+                // Actualizar el localStorage con el empresaId
+                localStorage.setItem(TOKEN_STORAGE.USER_DATA, JSON.stringify({
+                    userId: updatedSession.userId,
+                    userName: updatedSession.userName,
+                    role: updatedSession.role,
+                    name: updatedSession.name,
+                    lastName: updatedSession.lastName,
+                    empresaId: empresa.id
+                }));
+            }
+        }
+    }
+
+    /**
+     * Obtiene el ID de la empresa actualmente seleccionada
+     */
+    getCurrentEmpresaId(): number | null {
+        const selectedEmpresa = this.selectedEmpresaSubject.value;
+        return selectedEmpresa?.id || null;
+    }
+
+    /**
+     * Verifica si hay una empresa seleccionada
+     */
+    hasSelectedEmpresa(): boolean {
+        return this.getCurrentEmpresaId() !== null;
+    }
+
+    /**
+     * Observable que emite true si hay una empresa seleccionada
+     */
+    get hasEmpresaSelected$(): Observable<boolean> {
+        return this.selectedEmpresa$.pipe(
+            map(empresa => empresa !== null)
+        );
     }
 
     /**

@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
-import { takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { takeUntil, debounceTime, distinctUntilChanged, switchMap, combineLatest } from 'rxjs/operators';
 
 // Importar servicios y modelos
 import { FleetService, EquiposService } from '../../services';
 import { EquipoResponseDto, EstadoEquipoDto, EquipoFilters } from '../../models';
+import { EmpresaContextService } from '../../../../core/services/empresa-context.service';
 import { TmsButtonComponent } from '../../../../shared/components/tms-button/tms-button.component';
 
 // Interfaces para paginación
@@ -30,6 +31,7 @@ export class EquipoListComponent implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
   private readonly fleetService = inject(FleetService);
   private readonly equiposService = inject(EquiposService);
+  private readonly empresaContextService = inject(EmpresaContextService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
 
@@ -73,9 +75,16 @@ export class EquipoListComponent implements OnInit, OnDestroy {
     });
 
     this.setupFilterSubscriptions();
-  }
+  }  ngOnInit(): void {
+    // Verificar que hay una empresa seleccionada antes de inicializar
+    if (!this.empresaContextService.hasSelectedEmpresa()) {
+      this.error = 'No se ha seleccionado una empresa. Redirigiendo...';
+      setTimeout(() => {
+        this.router.navigate(['/auth/select-empresa']);
+      }, 2000);
+      return;
+    }
 
-  ngOnInit(): void {
     this.loadInitialData();
   }
 
@@ -83,14 +92,28 @@ export class EquipoListComponent implements OnInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
   }
-
   /**
    * Carga datos iniciales necesarios
    */
   private loadInitialData(): void {
     this.loading = true;
-    this.error = null;
+    this.error = null;    // Escuchar cambios en la empresa seleccionada y recargar datos cuando cambie
+    this.empresaContextService.selectedEmpresa$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(empresa => {
+        if (empresa) {
+          this.loadCatalogosAndEquipos();
+        } else {
+          this.error = 'No se ha seleccionado una empresa.';
+          this.loading = false;
+        }
+      });
+  }
 
+  /**
+   * Carga catálogos y equipos
+   */
+  private loadCatalogosAndEquipos(): void {
     // Cargar catálogos
     this.fleetService.loadCatalogos()
       .pipe(takeUntil(this.destroy$))
@@ -142,17 +165,30 @@ export class EquipoListComponent implements OnInit, OnDestroy {
         this.applyFilters();
       });
   }
-
   /**
    * Carga equipos con filtros y paginación
    */
   loadEquipos(): void {
     this.loading = true;
-    this.error = null;
+    this.error = null;    // Obtener empresaId del EmpresaContextService
+    const empresaId = this.empresaContextService.getCurrentEmpresaId();
+    
+    if (!empresaId) {
+      this.error = 'No se ha seleccionado una empresa. Por favor, seleccione una empresa.';
+      this.loading = false;
+      this.router.navigate(['/auth/select-empresa']);
+      return;
+    }
+
+    // Actualizar filtros con empresaId
+    const filtrosConEmpresa = {
+      ...this.currentFilters,
+      empresaId
+    };
 
     // TODO: Implementar cuando el servicio soporte paginación
     // Por ahora simulamos la paginación en el frontend
-    this.equiposService.searchEquipos(this.currentFilters, { showErrorNotification: false })
+    this.equiposService.searchEquipos(filtrosConEmpresa, { showErrorNotification: false })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (equipos) => {
@@ -178,31 +214,35 @@ export class EquipoListComponent implements OnInit, OnDestroy {
     this.pagination.totalElements = allEquipos.length;
     this.pagination.totalPages = Math.ceil(allEquipos.length / this.pagination.size);
   }
-
   /**
    * Aplica filtros actuales
-   */
-  applyFilters(): void {
+   */  applyFilters(): void {
     const formValue = this.filterForm.value;
+    const empresaId = this.empresaContextService.getCurrentEmpresaId();
+    
+    if (!empresaId) {
+      this.error = 'No se ha seleccionado una empresa.';
+      return;
+    }
     
     this.currentFilters = {
       search: formValue.search?.trim() || undefined,
       estadoId: formValue.estadoId || undefined,
       tipoEquipo: formValue.tipoEquipo || undefined,
-      empresaId: 1 // TODO: Obtener de AuthService
+      empresaId
     };
 
     // Resetear paginación al aplicar filtros
     this.pagination.currentPage = 0;
     this.loadEquipos();
   }
-
   /**
    * Limpia todos los filtros
-   */
-  clearFilters(): void {
+   */  clearFilters(): void {
+    const empresaId = this.empresaContextService.getCurrentEmpresaId();
+    
     this.filterForm.reset();
-    this.currentFilters = { empresaId: 1 }; // TODO: Obtener de AuthService
+    this.currentFilters = { empresaId: empresaId || undefined };
     this.pagination.currentPage = 0;
     this.loadEquipos();
   }
@@ -366,5 +406,18 @@ export class EquipoListComponent implements OnInit, OnDestroy {
    */
   get Math() {
     return Math;
+  }
+  /**
+   * Getter para obtener información de la empresa seleccionada
+   */
+  get selectedEmpresa() {
+    return this.empresaContextService.getSelectedEmpresa();
+  }
+
+  /**
+   * Getter para obtener el ID de la empresa seleccionada
+   */
+  get empresaId() {
+    return this.empresaContextService.getCurrentEmpresaId();
   }
 }
