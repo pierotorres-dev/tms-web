@@ -10,6 +10,7 @@ const routes: Routes = [
     pathMatch: 'full'
   },
   // Aquí irán las rutas para los componentes de neumáticos
+  // Todas las rutas futuras deberán incluir canActivate: [EmpresaSelectedGuard]
 ];
 
 @NgModule({

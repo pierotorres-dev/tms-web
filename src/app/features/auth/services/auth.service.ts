@@ -12,11 +12,9 @@ import {
     EmpresaInfo,
     LoginRequest,
     LoginResponse,
-    RegisterRequest,
-    UserResponse,
+    RegisterRequest,    UserResponse,
     UserSession
 } from '../models/auth.model';
-import { environment } from '../../../../environments/environment';
 
 /**
  * Servicio de autenticación que maneja la interacción con el API de auth
@@ -87,10 +85,8 @@ export class AuthService {
      * Realiza la autenticación del usuario
      */
     login(credentials: LoginRequest): Observable<LoginResponse> {
-        this.loadingSubject.next(true);
-
-        return this.http.post<LoginResponse>(
-            `${environment.apiUrl}${AUTH_API.LOGIN}`,
+        this.loadingSubject.next(true);        return this.http.post<LoginResponse>(
+            AUTH_API.LOGIN,
             credentials,
             { showErrorNotification: false } // Manejamos los errores específicamente en el componente
         ).pipe(
@@ -150,15 +146,14 @@ export class AuthService {
             userId,
             empresaId,
             sessionToken
-        });
-
-        return this.http.post<AuthResponse>(
-            `${environment.apiUrl}${AUTH_API.GENERATE_TOKEN}`,
+        });        return this.http.post<AuthResponse>(
+            AUTH_API.GENERATE_TOKEN,
             null,
             {
                 params,
                 showErrorNotification: true
-            }        ).pipe(
+            }
+        ).pipe(
             tap(response => {
                 // Recuperamos la información de usuario guardada
                 const storedUser = localStorage.getItem(TOKEN_STORAGE.USER_DATA);
@@ -210,10 +205,8 @@ export class AuthService {
 
         const headers = new HttpHeaders({
             'Authorization': `Bearer ${token}`
-        });
-
-        return this.http.post<AuthResponse>(
-            `${environment.apiUrl}${AUTH_API.REFRESH_TOKEN}`,
+        });        return this.http.post<AuthResponse>(
+            AUTH_API.REFRESH_TOKEN,
             null,
             {
                 headers,
@@ -254,10 +247,8 @@ export class AuthService {
 
         const headers = new HttpHeaders({
             'Authorization': `Bearer ${token}`
-        });
-
-        return this.http.get<boolean>(
-            `${environment.apiUrl}${AUTH_API.VALIDATE_TOKEN}`,
+        });        return this.http.get<boolean>(
+            AUTH_API.VALIDATE_TOKEN,
             {
                 headers,
                 showErrorNotification: false // No mostrar notificaciones para validación de token
@@ -271,10 +262,8 @@ export class AuthService {
      * Registra un nuevo usuario
      */
     register(registerData: RegisterRequest): Observable<UserResponse> {
-        this.loadingSubject.next(true);
-
-        return this.http.post<UserResponse>(
-            `${environment.apiUrl}${AUTH_API.REGISTER}`,
+        this.loadingSubject.next(true);        return this.http.post<UserResponse>(
+            AUTH_API.REGISTER,
             registerData,
             { showErrorNotification: true }
         ).pipe(

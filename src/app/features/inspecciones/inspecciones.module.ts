@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Routes } from '@angular/router';
+import { EmpresaSelectedGuard } from '../../core/guards/empresa-selected.guard';
 
 const routes: Routes = [
   {
@@ -9,6 +10,7 @@ const routes: Routes = [
     pathMatch: 'full'
   },
   // Aquí irán las rutas para los componentes de inspecciones
+  // Todas las rutas futuras deberán incluir canActivate: [EmpresaSelectedGuard]
 ];
 
 @NgModule({

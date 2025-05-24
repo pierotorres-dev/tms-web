@@ -17,9 +17,8 @@ export const authInterceptor: HttpInterceptorFn = (
 ): Observable<HttpEvent<unknown>> => {
   const authService = inject(AuthService);
   const router = inject(Router);
-  
-  // Solo añadimos el token para peticiones a nuestra API
-  if (!req.url.startsWith(environment.apiUrl)) {
+    // Solo añadimos el token para peticiones a nuestra API (URLs relativas o que empiecen con nuestro dominio)
+  if (!req.url.startsWith(environment.apiUrl) && !req.url.startsWith('/api/')) {
     return next(req);
   }
   

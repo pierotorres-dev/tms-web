@@ -2,13 +2,14 @@ import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Subject } from 'rxjs';
-import { takeUntil, debounceTime, distinctUntilChanged, switchMap, combineLatest } from 'rxjs/operators';
+import { Subject, combineLatest, of } from 'rxjs';
+import { takeUntil, debounceTime, distinctUntilChanged, filter, catchError } from 'rxjs/operators';
 
 // Importar servicios y modelos
 import { FleetService, EquiposService } from '../../services';
 import { EquipoResponseDto, EstadoEquipoDto, EquipoFilters } from '../../models';
 import { EmpresaContextService } from '../../../../core/services/empresa-context.service';
+import { AuthService } from '../../../auth/services/auth.service';
 import { TmsButtonComponent } from '../../../../shared/components/tms-button/tms-button.component';
 
 // Interfaces para paginación
@@ -32,6 +33,7 @@ export class EquipoListComponent implements OnInit, OnDestroy {
   private readonly fleetService = inject(FleetService);
   private readonly equiposService = inject(EquiposService);
   private readonly empresaContextService = inject(EmpresaContextService);
+  private readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
 
@@ -66,6 +68,21 @@ export class EquipoListComponent implements OnInit, OnDestroy {
     { value: 'MONTACARGA', label: 'Montacarga' },
     { value: 'OTRO', label: 'Otro' }
   ];
+  // Estados de carga más granulares
+  loadingStates = {
+    initializing: true,
+    catalogos: false,
+    equipos: false,
+    authentication: false
+  };
+
+  // Información de contexto para debugging (solo en desarrollo)
+  debugInfo = {
+    hasToken: false,
+    hasEmpresa: false,
+    empresaId: null as number | null,
+    empresaName: '' as string
+  };
 
   constructor() {
     this.filterForm = this.fb.group({
@@ -75,50 +92,122 @@ export class EquipoListComponent implements OnInit, OnDestroy {
     });
 
     this.setupFilterSubscriptions();
-  }  ngOnInit(): void {
-    // Verificar que hay una empresa seleccionada antes de inicializar
-    if (!this.empresaContextService.hasSelectedEmpresa()) {
-      this.error = 'No se ha seleccionado una empresa. Redirigiendo...';
-      setTimeout(() => {
-        this.router.navigate(['/auth/select-empresa']);
-      }, 2000);
-      return;
-    }
+  }
 
-    this.loadInitialData();
+  ngOnInit(): void {
+    this.initializeComponent();
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
+
   /**
-   * Carga datos iniciales necesarios
+   * Inicializa el componente con validaciones completas de autenticación
    */
-  private loadInitialData(): void {
-    this.loading = true;
-    this.error = null;    // Escuchar cambios en la empresa seleccionada y recargar datos cuando cambie
-    this.empresaContextService.selectedEmpresa$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(empresa => {
-        if (empresa) {
-          this.loadCatalogosAndEquipos();
-        } else {
-          this.error = 'No se ha seleccionado una empresa.';
-          this.loading = false;
+  private initializeComponent(): void {
+    this.loadingStates.initializing = true;
+    this.error = null;
+
+    // Verificar autenticación completa (token + empresa)
+    combineLatest([
+      this.authService.isAuthenticated(),
+      this.empresaContextService.hasEmpresaSelected$,
+      this.empresaContextService.validEmpresaContext$
+    ]).pipe(
+      takeUntil(this.destroy$),
+      debounceTime(100) // Pequeño debounce para evitar múltiples verificaciones rápidas
+    ).subscribe({
+      next: ([isAuthenticated, hasEmpresa, empresaContext]) => {
+        this.updateDebugInfo();
+        
+        if (!isAuthenticated) {
+          this.handleAuthenticationError('No se encontró una sesión válida');
+          return;
         }
-      });
+
+        if (!hasEmpresa) {
+          this.handleEmpresaSelectionError();
+          return;
+        }
+
+        // Si llegamos aquí, todo está bien configurado
+        this.loadingStates.initializing = false;
+        this.loadInitialData();
+      },
+      error: (error) => {
+        console.error('Error durante la inicialización:', error);
+        this.handleAuthenticationError('Error al verificar la autenticación');
+      }
+    });
   }
 
   /**
-   * Carga catálogos y equipos
+   * Actualiza información de debug (solo visible en desarrollo)
    */
-  private loadCatalogosAndEquipos(): void {
-    // Cargar catálogos
+  private updateDebugInfo(): void {
+    this.debugInfo.hasToken = !!this.authService.getToken();
+    this.debugInfo.hasEmpresa = this.empresaContextService.hasSelectedEmpresa();
+    this.debugInfo.empresaId = this.empresaContextService.getCurrentEmpresaId();
+    
+    const contextInfo = this.empresaContextService.getContextInfo();
+    this.debugInfo.empresaName = contextInfo?.empresaName || '';
+  }
+
+  /**
+   * Maneja errores de autenticación
+   */
+  private handleAuthenticationError(message: string): void {
+    this.error = `${message}. Redirigiendo al login...`;
+    this.loadingStates.initializing = false;
+    this.loading = false;
+    
+    // Limpiar sesión y redirigir
+    setTimeout(() => {
+      this.authService.logout();
+    }, 2000);
+  }
+
+  /**
+   * Maneja errores de selección de empresa
+   */
+  private handleEmpresaSelectionError(): void {
+    this.error = 'No se ha seleccionado una empresa. Redirigiendo...';
+    this.loadingStates.initializing = false;
+    this.loading = false;
+    
+    setTimeout(() => {
+      this.router.navigate(['/auth/select-empresa']);
+    }, 2000);
+  }
+  /**
+   * Carga datos iniciales necesarios (solo cuando la autenticación es válida)
+   */
+  private loadInitialData(): void {
+    this.loadingStates.catalogos = true;
+    this.error = null;
+
+    // Cargar catálogos primero
     this.fleetService.loadCatalogos()
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        takeUntil(this.destroy$),
+        catchError(error => {
+          console.error('Error loading catalogs:', error);
+          
+          // Verificar si es un error de autenticación
+          if (error.status === 401) {
+            this.handleAuthenticationError('Token de autenticación inválido o expirado');
+            return of([]);
+          }
+          
+          throw error;
+        })
+      )
       .subscribe({
         next: () => {
+          this.loadingStates.catalogos = false;
+          
           // Suscribirse a estados de equipo
           this.fleetService.estadosEquipo$
             .pipe(takeUntil(this.destroy$))
@@ -130,13 +219,15 @@ export class EquipoListComponent implements OnInit, OnDestroy {
           this.loadEquipos();
         },
         error: (error) => {
-          this.error = 'Error al cargar los catálogos. Por favor, intente nuevamente.';
-          this.loading = false;
-          console.error('Error loading catalogs:', error);
+          this.loadingStates.catalogos = false;
+          
+          if (error.status !== 401) { // Los errores 401 ya se manejan arriba
+            this.error = 'Error al cargar los catálogos. Verifique su conexión e intente nuevamente.';
+            console.error('Error loading catalogs:', error);
+          }
         }
       });
   }
-
   /**
    * Configura subscripciones para filtros con debounce
    */
@@ -164,19 +255,22 @@ export class EquipoListComponent implements OnInit, OnDestroy {
       .subscribe(() => {
         this.applyFilters();
       });
-  }
-  /**
-   * Carga equipos con filtros y paginación
+  }  /**
+   * Carga equipos con validaciones mejoradas
    */
   loadEquipos(): void {
-    this.loading = true;
-    this.error = null;    // Obtener empresaId del EmpresaContextService
+    this.loadingStates.equipos = true;
+    this.error = null;
+
+    // Verificación de seguridad antes de cargar
+    if (!this.authService.getToken()) {
+      this.handleAuthenticationError('Token de autenticación no encontrado');
+      return;
+    }
+
     const empresaId = this.empresaContextService.getCurrentEmpresaId();
-    
     if (!empresaId) {
-      this.error = 'No se ha seleccionado una empresa. Por favor, seleccione una empresa.';
-      this.loading = false;
-      this.router.navigate(['/auth/select-empresa']);
+      this.handleEmpresaSelectionError();
       return;
     }
 
@@ -186,19 +280,38 @@ export class EquipoListComponent implements OnInit, OnDestroy {
       empresaId
     };
 
-    // TODO: Implementar cuando el servicio soporte paginación
-    // Por ahora simulamos la paginación en el frontend
     this.equiposService.searchEquipos(filtrosConEmpresa, { showErrorNotification: false })
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        takeUntil(this.destroy$),
+        catchError(error => {
+          console.error('Error loading equipos:', error);
+          
+          // Manejar errores específicos
+          if (error.status === 401) {
+            this.handleAuthenticationError('Su sesión ha expirado');
+            return of([]);
+          } else if (error.status === 403) {
+            this.error = 'No tiene permisos para acceder a los equipos de esta empresa.';
+            this.loadingStates.equipos = false;
+            return of([]);
+          }
+          
+          throw error;
+        })
+      )
       .subscribe({
         next: (equipos) => {
           this.processEquiposData(equipos);
+          this.loadingStates.equipos = false;
           this.loading = false;
         },
         error: (error) => {
-          this.error = 'Error al cargar los equipos. Por favor, intente nuevamente.';
+          this.loadingStates.equipos = false;
           this.loading = false;
-          console.error('Error loading equipos:', error);
+          
+          if (error.status !== 401 && error.status !== 403) { // Estos ya se manejan arriba
+            this.error = 'Error al cargar los equipos. Verifique su conexión e intente nuevamente.';
+          }
         }
       });
   }
@@ -413,11 +526,28 @@ export class EquipoListComponent implements OnInit, OnDestroy {
   get selectedEmpresa() {
     return this.empresaContextService.getSelectedEmpresa();
   }
-
   /**
    * Getter para obtener el ID de la empresa seleccionada
    */
   get empresaId() {
     return this.empresaContextService.getCurrentEmpresaId();
+  }
+
+  /**
+   * Getter para verificar si está cargando algún componente
+   */
+  get isLoading(): boolean {
+    return this.loadingStates.initializing || 
+           this.loadingStates.catalogos || 
+           this.loadingStates.equipos || 
+           this.loadingStates.authentication;
+  }
+
+  /**
+   * Método para reintentar la carga de datos
+   */
+  retryLoadData(): void {
+    this.error = null;
+    this.initializeComponent();
   }
 }

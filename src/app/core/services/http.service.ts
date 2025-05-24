@@ -3,6 +3,7 @@ import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular
 import { Observable, catchError, throwError, map } from 'rxjs';
 import { NotificationService } from './notification.service';
 import { ErrorMessages, HttpStatusCodes } from '../models/http.model';
+import { environment } from '../../../environments/environment';
 
 /**
  * Opciones para las peticiones HTTP
@@ -24,7 +25,28 @@ export interface HttpOptions {
 })
 export class HttpService {
   private http = inject(HttpClient);
-  private notificationService = inject(NotificationService);  /**
+  private notificationService = inject(NotificationService);
+
+  /**
+   * Construye la URL completa, añadiendo el baseURL si es necesario
+   * @param url URL relativa o absoluta
+   * @returns URL completa
+   */
+  private buildFullUrl(url: string): string {
+    // Si la URL ya es absoluta (empieza con http/https), la devolvemos tal como está
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    
+    // Si es una URL relativa, añadimos el baseURL
+    const baseUrl = environment.apiUrl;
+    
+    // Asegurarnos de que no haya dobles barras
+    const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    const normalizedPath = url.startsWith('/') ? url : `/${url}`;
+    
+    return `${normalizedBaseUrl}${normalizedPath}`;
+  }  /**
    * Realiza una petición GET
    */
   get<T>(url: string, options?: HttpOptions): Observable<T> {
@@ -36,11 +58,12 @@ export class HttpService {
       observe: 'body' as const 
     };
     
-    return this.http.get<T>(url, finalOptions).pipe(
+    const fullUrl = this.buildFullUrl(url);
+    
+    return this.http.get<T>(fullUrl, finalOptions).pipe(
       catchError(error => this.handleError(error, { showErrorNotification }))
     );
   }
-
   /**
    * Realiza una petición POST
    */
@@ -52,11 +75,12 @@ export class HttpService {
       observe: 'body' as const 
     };
     
-    return this.http.post<T>(url, body, finalOptions).pipe(
+    const fullUrl = this.buildFullUrl(url);
+    
+    return this.http.post<T>(fullUrl, body, finalOptions).pipe(
       catchError(error => this.handleError(error, { showErrorNotification }))
     );
   }
-
   /**
    * Realiza una petición PUT
    */
@@ -68,11 +92,12 @@ export class HttpService {
       observe: 'body' as const 
     };
     
-    return this.http.put<T>(url, body, finalOptions).pipe(
+    const fullUrl = this.buildFullUrl(url);
+    
+    return this.http.put<T>(fullUrl, body, finalOptions).pipe(
       catchError(error => this.handleError(error, { showErrorNotification }))
     );
-  }
-  /**
+  }  /**
    * Realiza una petición PATCH
    */
   patch<T>(url: string, body: any, options?: HttpOptions): Observable<T> {
@@ -83,11 +108,12 @@ export class HttpService {
       observe: 'body' as const 
     };
     
-    return this.http.patch<T>(url, body, finalOptions).pipe(
+    const fullUrl = this.buildFullUrl(url);
+    
+    return this.http.patch<T>(fullUrl, body, finalOptions).pipe(
       catchError(error => this.handleError(error, { showErrorNotification }))
     );
   }
-
   /**
    * Realiza una petición DELETE
    */
@@ -99,7 +125,9 @@ export class HttpService {
       observe: 'body' as const 
     };
     
-    return this.http.delete<T>(url, finalOptions).pipe(
+    const fullUrl = this.buildFullUrl(url);
+    
+    return this.http.delete<T>(fullUrl, finalOptions).pipe(
       catchError(error => this.handleError(error, { showErrorNotification }))
     );
   }
