@@ -51,10 +51,10 @@ export class FleetMapper {
         return EstadoEquipo.ACTIVO;
       case 'INACTIVO':
         return EstadoEquipo.INACTIVO;
-      case 'EN_MANTENIMIENTO':
-        return EstadoEquipo.EN_MANTENIMIENTO;
-      case 'DE_BAJA':
-        return EstadoEquipo.DE_BAJA;
+      case 'MANTENIMIENTO':
+        return EstadoEquipo.MANTENIMIENTO;
+      case 'INDISPONIBLE':
+        return EstadoEquipo.INDISPONIBLE;
       default:
         return EstadoEquipo.ACTIVO;
     }
@@ -69,9 +69,9 @@ export class FleetMapper {
         return 1;
       case EstadoEquipo.INACTIVO:
         return 2;
-      case EstadoEquipo.EN_MANTENIMIENTO:
+      case EstadoEquipo.MANTENIMIENTO:
         return 3;
-      case EstadoEquipo.DE_BAJA:
+      case EstadoEquipo.INDISPONIBLE:
         return 4;
       default:
         return 1;
