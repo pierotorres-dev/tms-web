@@ -181,37 +181,46 @@ export class EquiposService {
         }
         return of(successResults);
       })
-    );
-  }
+    );  }
 
   // ==================== MÉTODOS PRIVADOS ====================
-
   /**
    * Aplica filtros localmente a una lista de equipos
    */
   private aplicarFiltrosLocales(equipos: EquipoResponse[], filtros: EquipoFilters): EquipoResponse[] {
-    return equipos.filter(equipo => {      // Filtro por estado
-      if (filtros.estadoId && equipo.estadoEquipoResponse?.id !== filtros.estadoId) {
-        return false;
+    const equiposFiltrados = equipos.filter(equipo => {
+      // Filtro por estado
+      if (filtros.estadoId !== undefined) {
+        const equipoEstadoId = equipo.estadoEquipoResponse?.id;
+        if (equipoEstadoId !== filtros.estadoId) {
+          return false;
+        }
       }
 
-      // Filtro por placa (búsqueda parcial)
-      if (filtros.placa && !equipo.placa.toUpperCase().includes(filtros.placa.toUpperCase())) {
-        return false;
+      // Filtro de búsqueda general (placa, equipo, negocio)
+      if (filtros.placa) {
+        const searchTerm = filtros.placa.toUpperCase();
+        const placaMatch = equipo.placa?.toUpperCase().includes(searchTerm);
+        const equipoMatch = equipo.equipo?.toUpperCase().includes(searchTerm);
+        const negocioMatch = equipo.negocio?.toUpperCase().includes(searchTerm);
+        
+        if (!placaMatch && !equipoMatch && !negocioMatch) {
+          return false;
+        }
       }
 
-      // Filtro por tipo de equipo (búsqueda parcial)
+      // Filtro específico por tipo de equipo
       if (filtros.equipo && equipo.equipo && !equipo.equipo.toUpperCase().includes(filtros.equipo.toUpperCase())) {
         return false;
       }
 
-      // Filtro por negocio (búsqueda parcial)
+      // Filtro específico por negocio
       if (filtros.negocio && equipo.negocio && !equipo.negocio.toUpperCase().includes(filtros.negocio.toUpperCase())) {
         return false;
-      }
-
-      return true;
+      }      return true;
     });
+    
+    return equiposFiltrados;
   }
 
   /**
