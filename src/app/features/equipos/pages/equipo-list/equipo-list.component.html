@@ -9,9 +9,21 @@
         <span class="font-medium">{{ selectedEmpresa.nombre }}</span>
         <span class="text-gray-500 ml-2">(ID: {{ empresaId }})</span>
       </p>
-    </div>
+    </div>      <!-- Botón de nuevo equipo -->
+    <div class="mt-4 sm:mt-0 flex space-x-3">
+      <!-- Botón de refresh -->
+      <app-tms-button 
+        variant="secondary" 
+        size="lg"
+        [disabled]="isLoading"
+        (buttonClick)="refreshData()"
+        [title]="'Actualizar lista de equipos'">
+        <svg class="h-5 w-5" [class.animate-spin]="isLoading" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+      </app-tms-button>
+
       <!-- Botón de nuevo equipo -->
-    <div class="mt-4 sm:mt-0">
       <app-tms-button 
         variant="primary" 
         size="lg"
@@ -224,20 +236,24 @@
       </thead>
       
       <!-- Contenido de la tabla -->
-      <tbody class="bg-white divide-y divide-gray-200">
-        
-        <!-- Loading state -->
-        <tr *ngIf="loading">
+      <tbody class="bg-white divide-y divide-gray-200">        <!-- Loading state con mensajes específicos -->
+        <tr *ngIf="isLoading">
           <td colspan="7" class="px-6 py-12 text-center">
             <div class="flex flex-col items-center space-y-3">
               <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <p class="text-sm text-gray-500">Cargando equipos...</p>
+              <p class="text-sm text-gray-500">
+                <span *ngIf="loadingStates.initializing">Inicializando aplicación...</span>
+                <span *ngIf="loadingStates.catalogos && !loadingStates.initializing">Cargando configuración...</span>
+                <span *ngIf="loadingStates.equipos && !isInitialLoading">Cargando equipos...</span>
+                <span *ngIf="loadingStates.authentication">Verificando autenticación...</span>
+                <span *ngIf="loading && !loadingStates.equipos && !isInitialLoading">Procesando datos...</span>
+              </p>
             </div>
           </td>
         </tr>
         
         <!-- No data state -->
-        <tr *ngIf="!loading && equipos.length === 0">
+        <tr *ngIf="!isLoading && equipos.length === 0">
           <td colspan="7" class="px-6 py-12 text-center">
             <div class="flex flex-col items-center space-y-3">
               <svg class="h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -342,9 +358,8 @@
       </tbody>
     </table>
   </div>
-
   <!-- Paginación -->
-  <div *ngIf="!loading && equipos.length > 0" class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+  <div *ngIf="!isLoading && equipos.length > 0" class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
     <div class="flex items-center justify-between">
       
       <!-- Información de paginación -->

@@ -114,7 +114,7 @@ export class EquipoListComponent implements OnInit, OnDestroy {
     ).subscribe({
       next: ([isAuthenticated, hasEmpresa, empresaContext]) => {
         this.updateDebugInfo();
-        
+
         if (!isAuthenticated) {
           this.handleAuthenticationError('No se encontró una sesión válida');
           return;
@@ -143,7 +143,7 @@ export class EquipoListComponent implements OnInit, OnDestroy {
     this.debugInfo.hasToken = !!this.authService.getToken();
     this.debugInfo.hasEmpresa = this.empresaContextService.hasSelectedEmpresa();
     this.debugInfo.empresaId = this.empresaContextService.getCurrentEmpresaId();
-    
+
     const contextInfo = this.empresaContextService.getContextInfo();
     this.debugInfo.empresaName = contextInfo?.empresaName || '';
   }
@@ -155,7 +155,7 @@ export class EquipoListComponent implements OnInit, OnDestroy {
     this.error = `${message}. Redirigiendo al login...`;
     this.loadingStates.initializing = false;
     this.loading = false;
-    
+
     // Limpiar sesión y redirigir
     setTimeout(() => {
       this.authService.logout();
@@ -169,7 +169,7 @@ export class EquipoListComponent implements OnInit, OnDestroy {
     this.error = 'No se ha seleccionado una empresa. Redirigiendo...';
     this.loadingStates.initializing = false;
     this.loading = false;
-    
+
     setTimeout(() => {
       this.router.navigate(['/auth/select-empresa']);
     }, 2000);
@@ -187,20 +187,20 @@ export class EquipoListComponent implements OnInit, OnDestroy {
         takeUntil(this.destroy$),
         catchError(error => {
           console.error('Error loading catalogs:', error);
-          
+
           // Verificar si es un error de autenticación
           if (error.status === 401) {
             this.handleAuthenticationError('Token de autenticación inválido o expirado');
             return of([]);
           }
-          
+
           throw error;
         })
       )
       .subscribe({
         next: () => {
           this.loadingStates.catalogos = false;
-          
+
           // Suscribirse a estados de equipo
           this.fleetService.estadosEquipo$
             .pipe(takeUntil(this.destroy$))
@@ -213,7 +213,7 @@ export class EquipoListComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           this.loadingStates.catalogos = false;
-          
+
           if (error.status !== 401) { // Los errores 401 ya se manejan arriba
             this.error = 'Error al cargar los catálogos. Verifique su conexión e intente nuevamente.';
             console.error('Error loading catalogs:', error);
@@ -240,7 +240,7 @@ export class EquipoListComponent implements OnInit, OnDestroy {
         if (console && typeof console.log === 'function' && !environment.production) {
           console.log('📝 Formulario cambió:', formValue);
         }
-        
+
         // Solo aplicar filtros si el componente está completamente inicializado
         if (!this.loadingStates.initializing && !this.loadingStates.catalogos) {
           this.applyFiltersFromFormValue(formValue);
@@ -251,6 +251,7 @@ export class EquipoListComponent implements OnInit, OnDestroy {
    */
   loadEquipos(): void {
     this.loadingStates.equipos = true;
+    this.loading = true; // Asegurar que se muestre el loading
     this.error = null; // Limpiar errores previos
 
     // Verificación de seguridad antes de cargar
@@ -271,17 +272,12 @@ export class EquipoListComponent implements OnInit, OnDestroy {
       empresaId
     };
 
-    // Debug en desarrollo
-    if (console && typeof console.log === 'function') {
-      console.log('📋 Cargando equipos con filtros:', filtrosConEmpresa);
-    }
-
     this.equiposService.searchEquipos(filtrosConEmpresa, { showErrorNotification: false })
       .pipe(
         takeUntil(this.destroy$),
         catchError(error => {
           console.error('Error loading equipos:', error);
-          
+
           // Manejar errores específicos
           if (error.status === 401) {
             this.handleAuthenticationError('Su sesión ha expirado');
@@ -291,7 +287,7 @@ export class EquipoListComponent implements OnInit, OnDestroy {
             this.loadingStates.equipos = false;
             return of([]);
           }
-          
+
           throw error;
         })
       )
@@ -304,7 +300,7 @@ export class EquipoListComponent implements OnInit, OnDestroy {
         error: (error) => {
           this.loadingStates.equipos = false;
           this.loading = false;
-          
+
           if (error.status !== 401 && error.status !== 403) { // Estos ya se manejan arriba
             this.error = 'Error al cargar los equipos. Verifique su conexión e intente nuevamente.';
           }
@@ -318,7 +314,7 @@ export class EquipoListComponent implements OnInit, OnDestroy {
   private processEquiposData(allEquipos: EquipoResponse[]): void {
     const startIndex = this.pagination.currentPage * this.pagination.size;
     const endIndex = startIndex + this.pagination.size;
-    
+
     this.equipos = allEquipos.slice(startIndex, endIndex);
     this.pagination.totalElements = allEquipos.length;
     this.pagination.totalPages = Math.ceil(allEquipos.length / this.pagination.size);
@@ -328,12 +324,12 @@ export class EquipoListComponent implements OnInit, OnDestroy {
    */
   private applyFiltersFromFormValue(formValue: any): void {
     const empresaId = this.empresaContextService.getCurrentEmpresaId();
-    
+
     if (!empresaId) {
       this.error = 'No se ha seleccionado una empresa.';
       return;
     }
-    
+
     // Convertir estadoId a number si existe, ya que los select HTML devuelven strings
     let estadoId: number | undefined = undefined;
     if (formValue.estadoId && formValue.estadoId !== '' && formValue.estadoId !== '0') {
@@ -378,25 +374,25 @@ export class EquipoListComponent implements OnInit, OnDestroy {
    */
   clearFilters(): void {
     const empresaId = this.empresaContextService.getCurrentEmpresaId();
-    
+
     // Resetear formulario sin disparar valueChanges
     this.filterForm.setValue({
       search: '',
       estadoId: ''
     }, { emitEvent: false });
-    
+
     // Limpiar filtros actuales manualmente
     this.currentFilters = { empresaId: empresaId || undefined };
-    
+
     // Limpiar errores y resetear paginación
     this.error = null;
     this.pagination.currentPage = 0;
-    
+
     // Debug
     if (console && typeof console.log === 'function' && !environment.production) {
       console.log('🧹 Filtros limpiados, recargando equipos...');
     }
-    
+
     this.loadEquipos();
   }
 
@@ -429,12 +425,12 @@ export class EquipoListComponent implements OnInit, OnDestroy {
       this.sortField = field;
       this.sortDirection = 'asc';
     }
-    
+
     // Ordenar equipos actuales
     this.equipos.sort((a, b) => {
       const aValue = this.getFieldValue(a, field);
       const bValue = this.getFieldValue(b, field);
-      
+
       if (aValue < bValue) return this.sortDirection === 'asc' ? -1 : 1;
       if (aValue > bValue) return this.sortDirection === 'asc' ? 1 : -1;
       return 0;
@@ -451,7 +447,7 @@ export class EquipoListComponent implements OnInit, OnDestroy {
       case 'negocio':
         return equipo.negocio?.toLowerCase() || '';
       case 'equipo':
-        return equipo.equipo?.toLowerCase() || '';      case 'estado':
+        return equipo.equipo?.toLowerCase() || ''; case 'estado':
         return equipo.estadoEquipoResponse?.nombre.toLowerCase() || '';
       default:
         return '';
@@ -479,10 +475,10 @@ export class EquipoListComponent implements OnInit, OnDestroy {
   getActiveFiltersCount(): number {
     const formValue = this.filterForm.value;
     let count = 0;
-    
+
     if (formValue.search?.trim()) count++;
     if (formValue.estadoId && formValue.estadoId !== '' && formValue.estadoId !== '0') count++;
-    
+
     return count;
   }
 
@@ -492,18 +488,18 @@ export class EquipoListComponent implements OnInit, OnDestroy {
   getActiveFiltersDescription(): string {
     const formValue = this.filterForm.value;
     const filters: string[] = [];
-    
+
     if (formValue.search?.trim()) {
       filters.push(`Búsqueda: "${formValue.search.trim()}"`);
     }
-    
+
     if (formValue.estadoId && formValue.estadoId !== '' && formValue.estadoId !== '0') {
       const estado = this.estadosEquipo.find(e => e.id === Number(formValue.estadoId));
       if (estado) {
         filters.push(`Estado: ${estado.nombre}`);
       }
     }
-    
+
     return filters.join(' | ');
   }
 
@@ -535,21 +531,21 @@ export class EquipoListComponent implements OnInit, OnDestroy {
     const pages: number[] = [];
     const totalPages = this.pagination.totalPages;
     const currentPage = this.pagination.currentPage;
-    
+
     // Mostrar máximo 5 páginas
     const maxVisible = 5;
     let start = Math.max(0, currentPage - Math.floor(maxVisible / 2));
     let end = Math.min(totalPages - 1, start + maxVisible - 1);
-    
+
     // Ajustar inicio si estamos cerca del final
     if (end - start < maxVisible - 1) {
       start = Math.max(0, end - maxVisible + 1);
     }
-    
+
     for (let i = start; i <= end; i++) {
       pages.push(i);
     }
-    
+
     return pages;
   }
   /**
@@ -595,18 +591,35 @@ export class EquipoListComponent implements OnInit, OnDestroy {
   /**
    * Getter para obtener el ID de la empresa seleccionada
    */
-  get empresaId() {
+  get empresaId(): number | null {
     return this.empresaContextService.getCurrentEmpresaId();
   }
 
   /**
+   * Actualiza los datos refrescando desde el servidor
+   */
+  refreshData(): void {
+    this.error = null;
+    this.loadEquipos();
+  }
+
+  /**
    * Getter para verificar si está cargando algún componente
+   * Mejorado para manejar mejor el estado inicial
    */
   get isLoading(): boolean {
-    return this.loadingStates.initializing || 
-           this.loadingStates.catalogos || 
-           this.loadingStates.equipos || 
-           this.loadingStates.authentication;
+    return this.loadingStates.initializing ||
+      this.loadingStates.catalogos ||
+      this.loadingStates.equipos ||
+      this.loadingStates.authentication ||
+      this.loading; // Incluir loading como fallback
+  }
+
+  /**
+   * Getter para verificar si es la primera carga
+   */
+  get isInitialLoading(): boolean {
+    return this.loadingStates.initializing || this.loadingStates.catalogos;
   }
 
   /**
@@ -639,19 +652,19 @@ export class EquipoListComponent implements OnInit, OnDestroy {
       this.debugLog('⚠️ Estados de equipo no cargados o vacíos');
       return false;
     }
-    
+
     // Verificar que todos los estados tienen ID y nombre
     const invalidEstados = this.estadosEquipo.filter(estado => !estado.id || !estado.nombre);
     if (invalidEstados.length > 0) {
       this.debugLog('⚠️ Estados inválidos encontrados:', invalidEstados);
       return false;
     }
-    
+
     this.debugLog('✅ Estados validados correctamente:', {
       total: this.estadosEquipo.length,
       estados: this.estadosEquipo.map(e => ({ id: e.id, nombre: e.nombre }))
     });
-    
+
     return true;
   }
 }

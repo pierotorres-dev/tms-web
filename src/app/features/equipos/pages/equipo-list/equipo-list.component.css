@@ -300,80 +300,46 @@
   background: #0f3cc9;
 }
 
-/* Paginación */
-.pagination-section {
-  background: white;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #e5e7eb;
-  border-radius: 0 0 12px 12px;
-}
-
-.pagination-container {
-  display: flex;
-  justify-content: between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.pagination-info {
-  color: #6b7280;
-  font-size: 0.875rem;
-}
-
-.pagination-controls {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.pagination-nav {
-  display: flex;
-  gap: 0.25rem;
-}
-
-.pagination-btn {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
-  background: white;
-  color: #374151;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.875rem;
+/* Estilos para botón de refresh */
+.refresh-button {
   transition: all 0.2s ease;
-  min-width: 2.5rem;
-  text-align: center;
 }
 
-.pagination-btn:hover:not(:disabled) {
-  background: #f9fafb;
-  border-color: #9ca3af;
-}
-
-.pagination-btn:disabled {
-  opacity: 0.5;
+.refresh-button:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
-.pagination-btn.active {
-  background: #1447e6;
-  color: white;
-  border-color: #1447e6;
+.refresh-button .refresh-icon {
+  transition: transform 0.2s ease;
 }
 
-.page-size-selector {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  color: #374151;
+.refresh-button.loading .refresh-icon {
+  animation: spin 1s linear infinite;
 }
 
-.page-size-selector select {
-  padding: 0.25rem 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  font-size: 0.875rem;
+@keyframes refresh-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Mejoras para estados de carga en la tabla */
+.loading-row {
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 50%, rgba(59, 130, 246, 0.1) 100%);
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
 }
 
 /* Responsive design */
