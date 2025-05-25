@@ -5,16 +5,13 @@ import { HttpService } from '../../../core/services/http.service';
 import { NotificationService } from '../../../core/services/notification.service';
 
 import {
-  EquipoRequestDto,
-  EquipoResponseDto,
-  ObservacionEquipoRequestDto,
-  ObservacionEquipoResponseDto,
-  TipoObservacionNeumaticoDto,
-  EstadoObservacionDto,
-  EstadoEquipoDto,
-  EquipoFilters,
-  ObservacionFilters,
-  UpdateMasivoResponseDto
+  EquipoRequest,
+  EquipoResponse,
+  ObservacionEquipoRequest,
+  ObservacionEquipoResponse,
+  TipoObservacionNeumaticoResponse,
+  EstadoObservacionResponse,
+  EstadoEquipoResponse
 } from '../models/fleet.dto';
 
 import { FleetMapper, FleetServiceOptions } from '../models/fleet.model';
@@ -34,15 +31,15 @@ export class FleetService {
 
   // ==================== ESTADO REACTIVO ====================
   
-  private readonly _equipos$ = new BehaviorSubject<EquipoResponseDto[]>([]);
-  private readonly _equipoSeleccionado$ = new BehaviorSubject<EquipoResponseDto | null>(null);
-  private readonly _observacionesEquipo$ = new BehaviorSubject<ObservacionEquipoResponseDto[]>([]);
+  private readonly _equipos$ = new BehaviorSubject<EquipoResponse[]>([]);
+  private readonly _equipoSeleccionado$ = new BehaviorSubject<EquipoResponse | null>(null);
+  private readonly _observacionesEquipo$ = new BehaviorSubject<ObservacionEquipoResponse[]>([]);
   private readonly _loading$ = new BehaviorSubject<boolean>(false);
 
   // Cache para catálogos
-  private readonly _estadosEquipo$ = new BehaviorSubject<EstadoEquipoDto[]>([]);
-  private readonly _estadosObservacion$ = new BehaviorSubject<EstadoObservacionDto[]>([]);
-  private readonly _tiposObservacionNeumatico$ = new BehaviorSubject<TipoObservacionNeumaticoDto[]>([]);
+  private readonly _estadosEquipo$ = new BehaviorSubject<EstadoEquipoResponse[]>([]);
+  private readonly _estadosObservacion$ = new BehaviorSubject<EstadoObservacionResponse[]>([]);
+  private readonly _tiposObservacionNeumatico$ = new BehaviorSubject<TipoObservacionNeumaticoResponse[]>([]);
 
   // ==================== OBSERVABLES PÚBLICOS ====================
   
@@ -107,10 +104,10 @@ export class FleetService {
   /**
    * Carga estados de equipo
    */
-  loadEstadosEquipo(options?: FleetServiceOptions): Observable<EstadoEquipoDto[]> {
+  loadEstadosEquipo(options?: FleetServiceOptions): Observable<EstadoEquipoResponse[]> {
     const url = FLEET_API_ENDPOINTS.CATALOGOS.ESTADO_EQUIPO;
     
-    return this.httpService.get<EstadoEquipoDto[]>(url, {
+    return this.httpService.get<EstadoEquipoResponse[]>(url, {
       showErrorNotification: options?.showErrorNotification ?? true
     }).pipe(
       tap(estados => this._estadosEquipo$.next(estados)),
@@ -124,10 +121,10 @@ export class FleetService {
   /**
    * Carga estados de observación
    */
-  loadEstadosObservacion(options?: FleetServiceOptions): Observable<EstadoObservacionDto[]> {
+  loadEstadosObservacion(options?: FleetServiceOptions): Observable<EstadoObservacionResponse[]> {
     const url = FLEET_API_ENDPOINTS.CATALOGOS.ESTADO_OBSERVACION;
     
-    return this.httpService.get<EstadoObservacionDto[]>(url, {
+    return this.httpService.get<EstadoObservacionResponse[]>(url, {
       showErrorNotification: options?.showErrorNotification ?? true
     }).pipe(
       tap(estados => this._estadosObservacion$.next(estados)),
@@ -141,10 +138,10 @@ export class FleetService {
   /**
    * Carga tipos de observación de neumático
    */
-  loadTiposObservacionNeumatico(options?: FleetServiceOptions): Observable<TipoObservacionNeumaticoDto[]> {
+  loadTiposObservacionNeumatico(options?: FleetServiceOptions): Observable<TipoObservacionNeumaticoResponse[]> {
     const url = FLEET_API_ENDPOINTS.CATALOGOS.TIPO_OBSERVACION_NEUMATICO;
     
-    return this.httpService.get<TipoObservacionNeumaticoDto[]>(url, {
+    return this.httpService.get<TipoObservacionNeumaticoResponse[]>(url, {
       showErrorNotification: options?.showErrorNotification ?? true
     }).pipe(
       tap(tipos => this._tiposObservacionNeumatico$.next(tipos)),
@@ -160,12 +157,12 @@ export class FleetService {
   /**
    * Obtiene todos los equipos por empresa
    */
-  getEquiposByEmpresa(empresaId: number, options?: FleetServiceOptions): Observable<EquipoResponseDto[]> {
+  getEquiposByEmpresa(empresaId: number, options?: FleetServiceOptions): Observable<EquipoResponse[]> {
     this.setLoading(true, FLEET_MESSAGES.LOADING.CARGANDO_EQUIPOS);
     
     const url = FLEET_API_ENDPOINTS.EQUIPOS.BY_EMPRESA(empresaId);
     
-    return this.httpService.get<EquipoResponseDto[]>(url, {
+    return this.httpService.get<EquipoResponse[]>(url, {
       showErrorNotification: options?.showErrorNotification ?? true
     }).pipe(
       tap(equipos => {
@@ -183,12 +180,12 @@ export class FleetService {
   /**
    * Obtiene un equipo por ID
    */
-  getEquipoById(id: number, options?: FleetServiceOptions): Observable<EquipoResponseDto | null> {
+  getEquipoById(id: number, options?: FleetServiceOptions): Observable<EquipoResponse | null> {
     this.setLoading(true, FLEET_MESSAGES.LOADING.CARGANDO_EQUIPO);
     
     const url = FLEET_API_ENDPOINTS.EQUIPOS.BY_ID(id);
     
-    return this.httpService.get<EquipoResponseDto>(url, {
+    return this.httpService.get<EquipoResponse>(url, {
       showErrorNotification: options?.showErrorNotification ?? true
     }).pipe(
       tap(equipo => {
@@ -206,12 +203,12 @@ export class FleetService {
   /**
    * Crea un nuevo equipo
    */
-  createEquipo(equipoData: EquipoRequestDto, options?: FleetServiceOptions): Observable<EquipoResponseDto | null> {
+  createEquipo(equipoData: EquipoRequest, options?: FleetServiceOptions): Observable<EquipoResponse | null> {
     this.setLoading(true, FLEET_MESSAGES.LOADING.GUARDANDO_EQUIPO);
     
     const url = FLEET_API_ENDPOINTS.EQUIPOS.BASE;
     
-    return this.httpService.post<EquipoResponseDto>(url, equipoData, {
+    return this.httpService.post<EquipoResponse>(url, equipoData, {
       showErrorNotification: options?.showErrorNotification ?? true
     }).pipe(
       tap(equipo => {
@@ -236,12 +233,12 @@ export class FleetService {
   /**
    * Actualiza un equipo existente
    */
-  updateEquipo(id: number, equipoData: EquipoRequestDto, options?: FleetServiceOptions): Observable<EquipoResponseDto | null> {
+  updateEquipo(id: number, equipoData: EquipoRequest, options?: FleetServiceOptions): Observable<EquipoResponse | null> {
     this.setLoading(true, FLEET_MESSAGES.LOADING.GUARDANDO_EQUIPO);
     
     const url = FLEET_API_ENDPOINTS.EQUIPOS.BY_ID(id);
     
-    return this.httpService.put<EquipoResponseDto>(url, equipoData, {
+    return this.httpService.put<EquipoResponse>(url, equipoData, {
       showErrorNotification: options?.showErrorNotification ?? true
     }).pipe(
       tap(equipoActualizado => {
@@ -275,12 +272,12 @@ export class FleetService {
   /**
    * Actualiza el estado de un equipo
    */
-  updateEstadoEquipo(id: number, estadoId: number, options?: FleetServiceOptions): Observable<EquipoResponseDto | null> {
+  updateEstadoEquipo(id: number, estadoId: number, options?: FleetServiceOptions): Observable<EquipoResponse | null> {
     this.setLoading(true, FLEET_MESSAGES.LOADING.ACTUALIZANDO_ESTADO);
     
     const url = FLEET_API_ENDPOINTS.EQUIPOS.UPDATE_ESTADO(id, estadoId);
     
-    return this.httpService.patch<EquipoResponseDto>(url, {}, {
+    return this.httpService.patch<EquipoResponse>(url, {}, {
       showErrorNotification: options?.showErrorNotification ?? true
     }).pipe(
       tap(equipoActualizado => {
@@ -319,12 +316,12 @@ export class FleetService {
   /**
    * Obtiene todas las observaciones de un equipo
    */
-  getObservacionesByEquipo(equipoId: number, options?: FleetServiceOptions): Observable<ObservacionEquipoResponseDto[]> {
+  getObservacionesByEquipo(equipoId: number, options?: FleetServiceOptions): Observable<ObservacionEquipoResponse[]> {
     this.setLoading(true, FLEET_MESSAGES.LOADING.CARGANDO_OBSERVACIONES);
     
     const url = FLEET_API_ENDPOINTS.OBSERVACIONES.BY_EQUIPO(equipoId);
     
-    return this.httpService.get<ObservacionEquipoResponseDto[]>(url, {
+    return this.httpService.get<ObservacionEquipoResponse[]>(url, {
       showErrorNotification: options?.showErrorNotification ?? true
     }).pipe(
       tap(observaciones => {
@@ -342,12 +339,12 @@ export class FleetService {
   /**
    * Crea una nueva observación
    */
-  createObservacion(observacionData: ObservacionEquipoRequestDto, options?: FleetServiceOptions): Observable<ObservacionEquipoResponseDto | null> {
+  createObservacion(observacionData: ObservacionEquipoRequest, options?: FleetServiceOptions): Observable<ObservacionEquipoResponse | null> {
     this.setLoading(true, FLEET_MESSAGES.LOADING.GUARDANDO_OBSERVACION);
     
     const url = FLEET_API_ENDPOINTS.OBSERVACIONES.BASE;
     
-    return this.httpService.post<ObservacionEquipoResponseDto>(url, observacionData, {
+    return this.httpService.post<ObservacionEquipoResponse>(url, observacionData, {
       showErrorNotification: options?.showErrorNotification ?? true
     }).pipe(
       tap(observacion => {
@@ -374,12 +371,12 @@ export class FleetService {
   /**
    * Actualiza una observación existente
    */
-  updateObservacion(id: number, observacionData: ObservacionEquipoRequestDto, options?: FleetServiceOptions): Observable<ObservacionEquipoResponseDto | null> {
+  updateObservacion(id: number, observacionData: ObservacionEquipoRequest, options?: FleetServiceOptions): Observable<ObservacionEquipoResponse | null> {
     this.setLoading(true, FLEET_MESSAGES.LOADING.GUARDANDO_OBSERVACION);
     
     const url = FLEET_API_ENDPOINTS.OBSERVACIONES.BY_ID(id);
     
-    return this.httpService.put<ObservacionEquipoResponseDto>(url, observacionData, {
+    return this.httpService.put<ObservacionEquipoResponse>(url, observacionData, {
       showErrorNotification: options?.showErrorNotification ?? true
     }).pipe(
       tap(observacionActualizada => {
@@ -438,7 +435,7 @@ export class FleetService {
   /**
    * Selecciona un equipo y carga sus observaciones
    */
-  selectEquipo(equipo: EquipoResponseDto, loadObservaciones: boolean = true): void {
+  selectEquipo(equipo: EquipoResponse, loadObservaciones: boolean = true): void {
     this._equipoSeleccionado$.next(equipo);
     
     if (loadObservaciones) {
@@ -457,7 +454,7 @@ export class FleetService {
   /**
    * Obtiene el estado actual de un catálogo
    */
-  getEstadoEquipoById(id: number): EstadoEquipoDto | undefined {
+  getEstadoEquipoById(id: number): EstadoEquipoResponse | undefined {
     return this._estadosEquipo$.value.find(estado => estado.id === id);
   }
 

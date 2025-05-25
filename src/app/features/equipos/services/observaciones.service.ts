@@ -3,11 +3,11 @@ import { Observable, map, switchMap, forkJoin, of, combineLatest } from 'rxjs';
 
 import { FleetService } from './fleet.service';
 import { 
-  ObservacionEquipoRequestDto, 
-  ObservacionEquipoResponseDto,
+  ObservacionEquipoRequest, 
+  ObservacionEquipoResponse,
   ObservacionFilters,
-  EstadoObservacionDto,
-  TipoObservacionNeumaticoDto
+  EstadoObservacionResponse,
+  TipoObservacionNeumaticoResponse
 } from '../models/fleet.dto';
 import { FleetServiceOptions } from '../models/fleet.model';
 
@@ -25,7 +25,7 @@ export class ObservacionesService {
   /**
    * Obtiene observaciones con filtros avanzados
    */
-  searchObservaciones(equipoId: number, filtros?: ObservacionFilters, options?: FleetServiceOptions): Observable<ObservacionEquipoResponseDto[]> {
+  searchObservaciones(equipoId: number, filtros?: ObservacionFilters, options?: FleetServiceOptions): Observable<ObservacionEquipoResponse[]> {
     return this.fleetService.getObservacionesByEquipo(equipoId, options).pipe(
       map(observaciones => filtros ? this.aplicarFiltrosLocales(observaciones, filtros) : observaciones)
     );
@@ -34,7 +34,7 @@ export class ObservacionesService {
   /**
    * Obtiene observaciones pendientes de un equipo
    */
-  getObservacionesPendientes(equipoId: number, options?: FleetServiceOptions): Observable<ObservacionEquipoResponseDto[]> {
+  getObservacionesPendientes(equipoId: number, options?: FleetServiceOptions): Observable<ObservacionEquipoResponse[]> {
     return this.fleetService.estadosObservacion$.pipe(
       switchMap(estados => {
         const estadoPendiente = estados.find(e => e.nombre.toUpperCase().includes('PENDIENTE'));
@@ -49,14 +49,14 @@ export class ObservacionesService {
   /**
    * Obtiene observaciones por tipo específico
    */
-  getObservacionesByTipo(equipoId: number, tipoObservacionId: number, options?: FleetServiceOptions): Observable<ObservacionEquipoResponseDto[]> {
+  getObservacionesByTipo(equipoId: number, tipoObservacionId: number, options?: FleetServiceOptions): Observable<ObservacionEquipoResponse[]> {
     return this.searchObservaciones(equipoId, { tipoObservacionId }, options);
   }
 
   /**
    * Obtiene observaciones en un rango de fechas
    */
-  getObservacionesByFechas(equipoId: number, fechaDesde: Date, fechaHasta: Date, options?: FleetServiceOptions): Observable<ObservacionEquipoResponseDto[]> {
+  getObservacionesByFechas(equipoId: number, fechaDesde: Date, fechaHasta: Date, options?: FleetServiceOptions): Observable<ObservacionEquipoResponse[]> {
     return this.searchObservaciones(equipoId, { fechaDesde, fechaHasta }, options);
   }
 
@@ -65,7 +65,7 @@ export class ObservacionesService {
   /**
    * Crea una nueva observación con validaciones adicionales
    */
-  createObservacionWithValidation(observacionData: ObservacionEquipoRequestDto, options?: FleetServiceOptions): Observable<ObservacionEquipoResponseDto | null> {
+  createObservacionWithValidation(observacionData: ObservacionEquipoRequest, options?: FleetServiceOptions): Observable<ObservacionEquipoResponse | null> {
     return this.validateObservacionData(observacionData).pipe(
       switchMap(validation => {
         if (!validation.valid) {
@@ -90,7 +90,7 @@ export class ObservacionesService {
   /**
    * Actualiza una observación existente con validaciones
    */
-  updateObservacionWithValidation(id: number, observacionData: ObservacionEquipoRequestDto, options?: FleetServiceOptions): Observable<ObservacionEquipoResponseDto | null> {
+  updateObservacionWithValidation(id: number, observacionData: ObservacionEquipoRequest, options?: FleetServiceOptions): Observable<ObservacionEquipoResponse | null> {
     return this.validateObservacionData(observacionData).pipe(
       switchMap(validation => {
         if (!validation.valid) {
@@ -107,10 +107,10 @@ export class ObservacionesService {
     );
   }
 
-  /**
+  /** TODO: IMPLEMENTAR LUEGO
    * Resuelve una observación marcándola como resuelta
    */
-  resolverObservacion(id: number, comentarioResolucion: string, usuarioResolucion: string, options?: FleetServiceOptions): Observable<ObservacionEquipoResponseDto | null> {
+  /*resolverObservacion(id: number, comentarioResolucion: string, usuarioResolucion: string, options?: FleetServiceOptions): Observable<ObservacionEquipoResponse | null> {
     return this.fleetService.estadosObservacion$.pipe(
       switchMap(estados => {
         const estadoResuelto = estados.find(e => e.nombre.toUpperCase().includes('RESUELTO') || e.nombre.toUpperCase().includes('CERRADO'));
@@ -129,15 +129,15 @@ export class ObservacionesService {
               return of(null);
             }
 
-            const observacionActualizada: ObservacionEquipoRequestDto = {
+            const observacionActualizada: ObservacionEquipoRequest = {
               equipoId: observacionActual.equipoId,
               fecha: observacionActual.fecha,
               tipoObservacionId: observacionActual.tipoObservacionNeumaticoResponse.id,
-              descripcion: observacionActual.descripcion,
+              descripcion: observacionActual.descripcion? observacionActual.descripcion : '',
               estadoId: estadoResuelto.id,
               fechaResolucion: new Date(),
               comentarioResolucion,
-              usuarioResolucion,
+              usuarioResolucion: observacionActual.usuarioResolucion?  '',
               usuarioId: observacionActual.usuarioId
             };
 
@@ -146,14 +146,14 @@ export class ObservacionesService {
         );
       })
     );
-  }
+  }*/
 
   // ==================== OPERACIONES EN LOTE ====================
 
-  /**
+  /** TODO: IMPLEMENTAR LUEGO
    * Resuelve múltiples observaciones de un equipo
    */
-  resolverObservacionesLote(equipoId: number, observacionesIds: number[], comentarioResolucion: string, usuarioResolucion: string, options?: FleetServiceOptions): Observable<number> {
+  /*resolverObservacionesLote(equipoId: number, observacionesIds: number[], comentarioResolucion: string, usuarioResolucion: string, options?: FleetServiceOptions): Observable<number> {
     const resoluciones = observacionesIds.map(id => 
       this.resolverObservacion(id, comentarioResolucion, usuarioResolucion, { 
         ...options, 
@@ -172,12 +172,12 @@ export class ObservacionesService {
         return of(successCount);
       })
     );
-  }
+  }*/
 
-  /**
+  /** IMPLEMENTAR LUEGO
    * Actualiza el estado de múltiples observaciones
    */
-  updateEstadoObservacionesLote(observacionesIds: number[], estadoId: number, options?: FleetServiceOptions): Observable<number> {
+  /*updateEstadoObservacionesLote(observacionesIds: number[], estadoId: number, options?: FleetServiceOptions): Observable<number> {
     const updates = observacionesIds.map(id => 
       this.updateEstadoObservacion(id, estadoId, { 
         ...options, 
@@ -196,31 +196,31 @@ export class ObservacionesService {
         return of(successCount);
       })
     );
-  }
+  }*/
 
   // ==================== MÉTODOS DE UTILIDAD ====================
 
   /**
    * Obtiene una observación por ID
    */
-  private getObservacionById(id: number): Observable<ObservacionEquipoResponseDto | null> {
+  private getObservacionById(id: number): Observable<ObservacionEquipoResponse | null> {
     // Como no tenemos endpoint directo para obtener por ID, buscamos en las observaciones cargadas
     return this.fleetService.observacionesEquipo$.pipe(
       map(observaciones => observaciones.find(obs => obs.id === id) || null)
     );
   }
 
-  /**
+  /** TODO: IMPLEMENTAR LUEGO
    * Actualiza solo el estado de una observación
    */
-  private updateEstadoObservacion(id: number, estadoId: number, options?: FleetServiceOptions): Observable<ObservacionEquipoResponseDto | null> {
+  /*private updateEstadoObservacion(id: number, estadoId: number, options?: FleetServiceOptions): Observable<ObservacionEquipoResponse | null> {
     return this.getObservacionById(id).pipe(
       switchMap(observacionActual => {
         if (!observacionActual) {
           return of(null);
         }
 
-        const observacionActualizada: ObservacionEquipoRequestDto = {
+        const observacionActualizada: ObservacionEquipoRequest = {
           equipoId: observacionActual.equipoId,
           fecha: observacionActual.fecha,
           tipoObservacionId: observacionActual.tipoObservacionNeumaticoResponse.id,
@@ -235,12 +235,12 @@ export class ObservacionesService {
         return this.fleetService.updateObservacion(id, observacionActualizada, options);
       })
     );
-  }
+  }*/
 
   /**
    * Valida los datos de una observación
    */
-  private validateObservacionData(observacionData: ObservacionEquipoRequestDto): Observable<{ valid: boolean; errors: string[] }> {
+  private validateObservacionData(observacionData: ObservacionEquipoRequest): Observable<{ valid: boolean; errors: string[] }> {
     const errors: string[] = [];
 
     // Validaciones básicas
@@ -270,7 +270,7 @@ export class ObservacionesService {
   /**
    * Aplica filtros localmente a las observaciones
    */
-  private aplicarFiltrosLocales(observaciones: ObservacionEquipoResponseDto[], filtros: ObservacionFilters): ObservacionEquipoResponseDto[] {
+  private aplicarFiltrosLocales(observaciones: ObservacionEquipoResponse[], filtros: ObservacionFilters): ObservacionEquipoResponse[] {
     return observaciones.filter(obs => {
       // Filtro por estado
       if (filtros.estadoId && obs.estadoObservacionResponse.id !== filtros.estadoId) {
@@ -293,11 +293,6 @@ export class ObservacionesService {
         if (filtros.fechaHasta && fechaObs > filtros.fechaHasta) {
           return false;
         }
-      }
-
-      // Filtro por usuario
-      if (filtros.usuarioId && obs.usuarioId !== filtros.usuarioId) {
-        return false;
       }
 
       return true;

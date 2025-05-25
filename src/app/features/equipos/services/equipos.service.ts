@@ -3,8 +3,8 @@ import { Observable, map, switchMap, forkJoin, of, BehaviorSubject } from 'rxjs'
 
 import { FleetService } from './fleet.service';
 import { 
-  EquipoResponseDto, 
-  EquipoRequestDto, 
+  EquipoResponse, 
+  EquipoRequest, 
   EquipoFilters
 } from '../models/fleet.dto';
 import { FleetServiceOptions } from '../models/fleet.model';
@@ -32,7 +32,7 @@ export class EquiposService {
   /**
    * Busca equipos con filtros avanzados
    */
-  searchEquipos(filtros: EquipoFilters, options?: FleetServiceOptions): Observable<EquipoResponseDto[]> {
+  searchEquipos(filtros: EquipoFilters, options?: FleetServiceOptions): Observable<EquipoResponse[]> {
     this._filtrosActivos$.next(filtros);
 
     // Si solo se especifica empresa, usar el método base
@@ -53,14 +53,14 @@ export class EquiposService {
   /**
    * Obtiene equipos por estado específico
    */
-  getEquiposByEstado(empresaId: number, estadoId: number, options?: FleetServiceOptions): Observable<EquipoResponseDto[]> {
+  getEquiposByEstado(empresaId: number, estadoId: number, options?: FleetServiceOptions): Observable<EquipoResponse[]> {
     return this.searchEquipos({ empresaId, estadoId }, options);
   }
 
   /**
    * Obtiene equipos activos de una empresa
    */
-  getEquiposActivos(empresaId: number, options?: FleetServiceOptions): Observable<EquipoResponseDto[]> {
+  getEquiposActivos(empresaId: number, options?: FleetServiceOptions): Observable<EquipoResponse[]> {
     return this.fleetService.estadosEquipo$.pipe(
       switchMap(estados => {
         const estadoActivo = estados.find(e => e.nombre.toUpperCase() === 'ACTIVO');
@@ -75,7 +75,7 @@ export class EquiposService {
   /**
    * Busca equipos por placa (búsqueda parcial)
    */
-  searchByPlaca(empresaId: number, placa: string, options?: FleetServiceOptions): Observable<EquipoResponseDto[]> {
+  searchByPlaca(empresaId: number, placa: string, options?: FleetServiceOptions): Observable<EquipoResponse[]> {
     return this.searchEquipos({ empresaId, placa: placa.toUpperCase() }, options);
   }
 
@@ -99,7 +99,7 @@ export class EquiposService {
   /**
    * Valida los datos de un equipo antes de guardar
    */
-  validateEquipoData(equipoData: EquipoRequestDto): Observable<{ valid: boolean; errors: string[] }> {
+  validateEquipoData(equipoData: EquipoRequest): Observable<{ valid: boolean; errors: string[] }> {
     const errors: string[] = [];
 
     // Validaciones básicas
@@ -163,7 +163,7 @@ export class EquiposService {
   /**
    * Crea múltiples equipos en lote
    */
-  createEquiposLote(equiposData: EquipoRequestDto[], options?: FleetServiceOptions): Observable<EquipoResponseDto[]> {
+  createEquiposLote(equiposData: EquipoRequest[], options?: FleetServiceOptions): Observable<EquipoResponse[]> {
     const creates = equiposData.map(equipo => 
       this.fleetService.createEquipo(equipo, { 
         ...options, 
@@ -172,7 +172,7 @@ export class EquiposService {
     );
 
     return forkJoin(creates).pipe(
-      map(results => results.filter(result => result !== null) as EquipoResponseDto[]),
+      map(results => results.filter(result => result !== null) as EquipoResponse[]),
       switchMap(successResults => {
         if (options?.showSuccessNotification ?? true) {
           this.fleetService['notificationService'].success(
@@ -189,10 +189,9 @@ export class EquiposService {
   /**
    * Aplica filtros localmente a una lista de equipos
    */
-  private aplicarFiltrosLocales(equipos: EquipoResponseDto[], filtros: EquipoFilters): EquipoResponseDto[] {
-    return equipos.filter(equipo => {
-      // Filtro por estado
-      if (filtros.estadoId && equipo.estadoEquipoResponse.id !== filtros.estadoId) {
+  private aplicarFiltrosLocales(equipos: EquipoResponse[], filtros: EquipoFilters): EquipoResponse[] {
+    return equipos.filter(equipo => {      // Filtro por estado
+      if (filtros.estadoId && equipo.estadoEquipoResponse?.id !== filtros.estadoId) {
         return false;
       }
 

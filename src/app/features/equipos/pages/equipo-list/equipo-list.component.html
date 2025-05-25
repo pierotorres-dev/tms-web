@@ -67,22 +67,6 @@
       </select>
     </div>
 
-    <!-- Filtro por tipo -->
-    <div class="lg:col-span-3">
-      <label for="tipoEquipo" class="block text-sm font-medium text-gray-700 mb-2">
-        Tipo de Equipo
-      </label>
-      <select
-        id="tipoEquipo"
-        formControlName="tipoEquipo"
-        class="block w-full py-2.5 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors duration-200">
-        <option value="">Todos los tipos</option>
-        <option *ngFor="let tipo of tiposEquipo" [value]="tipo.value">
-          {{ tipo.label }}
-        </option>
-      </select>
-    </div>
-
     <!-- Botones de acción -->
     <div class="lg:col-span-2 flex items-end space-x-2">
       <app-tms-button
@@ -176,10 +160,10 @@
           <th 
             scope="col" 
             class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-200"
-            (click)="onSort('tipoEquipo')">
+            (click)="onSort('negocio')">
             <div class="flex items-center space-x-1">
-              <span>Tipo</span>
-              <svg class="h-4 w-4 sort-icon" [ngClass]="getSortClass('tipoEquipo')" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <span>Negocio</span>
+              <svg class="h-4 w-4 sort-icon" [ngClass]="getSortClass('negocio')" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
               </svg>
             </div>
@@ -188,10 +172,10 @@
           <th 
             scope="col" 
             class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-200"
-            (click)="onSort('marca')">
+            (click)="onSort('equipo')">
             <div class="flex items-center space-x-1">
-              <span>Marca/Modelo</span>
-              <svg class="h-4 w-4 sort-icon" [ngClass]="getSortClass('marca')" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <span>Equipo</span>
+              <svg class="h-4 w-4 sort-icon" [ngClass]="getSortClass('equipo')" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
               </svg>
             </div>
@@ -200,10 +184,10 @@
           <th 
             scope="col" 
             class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-200"
-            (click)="onSort('anio')">
+            (click)="onSort('fechaInspeccion')">
             <div class="flex items-center space-x-1">
-              <span>Año</span>
-              <svg class="h-4 w-4 sort-icon" [ngClass]="getSortClass('anio')" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <span>Fecha Inspección</span>
+              <svg class="h-4 w-4 sort-icon" [ngClass]="getSortClass('fechaInspeccion')" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
               </svg>
             </div>
@@ -219,10 +203,6 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
               </svg>
             </div>
-          </th>
-          
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Información adicional
           </th>
           
           <th scope="col" class="relative px-6 py-3">
@@ -286,60 +266,40 @@
               </div>
               <div class="ml-4">
                 <div class="text-sm font-medium text-gray-900">{{ equipo.placa }}</div>
-                <div class="text-sm text-gray-500" *ngIf="equipo.codigo">Código: {{ equipo.codigo }}</div>
+                <div class="text-sm text-gray-500" *ngIf="equipo.placa">Código: {{ equipo.placa }}</div>
               </div>
             </div>
           </td>
           
-          <!-- Tipo -->
+          <!-- Negocio -->
           <td class="px-6 py-4 whitespace-nowrap">
             <div class="text-sm text-gray-900">
-              {{ equipo.tipoEquipo || 'No especificado' }}
+              {{ equipo.negocio || 'No especificado' }}
             </div>
             <div class="text-sm text-gray-500" *ngIf="equipo.negocio">
               {{ equipo.negocio }}
             </div>
           </td>
           
-          <!-- Marca/Modelo -->
+          <!-- Equipo -->
           <td class="px-6 py-4 whitespace-nowrap">
             <div class="text-sm text-gray-900">
-              {{ equipo.marca || 'No especificado' }}
+              {{ equipo.equipo || 'No especificado' }}
             </div>
-            <div class="text-sm text-gray-500" *ngIf="equipo.modelo">
-              {{ equipo.modelo }}
+            <div class="text-sm text-gray-500" *ngIf="equipo.equipo">
+              {{ equipo.equipo }}
             </div>
           </td>
           
-          <!-- Año -->
+          <!-- Fecha Inspección -->
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-            {{ equipo.anio || '-' }}
-          </td>
-          
-          <!-- Estado -->
+            {{ equipo.fechaInspeccion | date:'dd/MM/yyyy' }}
+          </td>          <!-- Estado -->
           <td class="px-6 py-4 whitespace-nowrap">
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                   [ngClass]="getEstadoClass(equipo.estadoEquipoResponse)">
-              {{ equipo.estadoEquipoResponse.nombre || 'Sin estado' }}
+              {{ equipo.estadoEquipoResponse?.nombre || 'Sin estado' }}
             </span>
-          </td>
-          
-          <!-- Información adicional -->
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-            <div class="space-y-1">
-              <div *ngIf="equipo.kilometraje" class="flex items-center">
-                <svg class="h-4 w-4 mr-1 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                {{ equipo.kilometraje | number }} km
-              </div>
-              <div *ngIf="equipo.fechaInspeccion" class="flex items-center">
-                <svg class="h-4 w-4 mr-1 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                {{ equipo.fechaInspeccion | date:'dd/MM/yyyy' }}
-              </div>
-            </div>
           </td>
           
           <!-- Acciones -->

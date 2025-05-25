@@ -7,14 +7,14 @@ import { takeUntil, debounceTime, distinctUntilChanged, filter, catchError } fro
 
 // Importar servicios y modelos
 import { FleetService, EquiposService } from '../../services';
-import { EquipoResponseDto, EstadoEquipoDto, EquipoFilters } from '../../models';
+import { EquipoResponse, EstadoEquipoResponse, EquipoFilters } from '../../models';
 import { EmpresaContextService } from '../../../../core/services/empresa-context.service';
 import { AuthService } from '../../../auth/services/auth.service';
 import { TmsButtonComponent } from '../../../../shared/components/tms-button/tms-button.component';
 
 // Interfaces para paginación
 interface PaginatedEquipos {
-  content: EquipoResponseDto[];
+  content: EquipoResponse[];
   totalElements: number;
   totalPages: number;
   currentPage: number;
@@ -38,8 +38,8 @@ export class EquipoListComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
 
   // Estado del componente
-  equipos: EquipoResponseDto[] = [];
-  estadosEquipo: EstadoEquipoDto[] = [];
+  equipos: EquipoResponse[] = [];
+  estadosEquipo: EstadoEquipoResponse[] = [];
   loading = false;
   error: string | null = null;
 
@@ -60,14 +60,6 @@ export class EquipoListComponent implements OnInit, OnDestroy {
   sortField = '';
   sortDirection: 'asc' | 'desc' = 'asc';
 
-  // Tipos de equipos disponibles (se puede expandir desde catálogos)
-  tiposEquipo = [
-    { value: 'CAMION', label: 'Camión' },
-    { value: 'GRUA', label: 'Grúa' },
-    { value: 'STACKER', label: 'Stacker' },
-    { value: 'MONTACARGA', label: 'Montacarga' },
-    { value: 'OTRO', label: 'Otro' }
-  ];
   // Estados de carga más granulares
   loadingStates = {
     initializing: true,
@@ -319,7 +311,7 @@ export class EquipoListComponent implements OnInit, OnDestroy {
   /**
    * Procesa datos de equipos para paginación frontend
    */
-  private processEquiposData(allEquipos: EquipoResponseDto[]): void {
+  private processEquiposData(allEquipos: EquipoResponse[]): void {
     const startIndex = this.pagination.currentPage * this.pagination.size;
     const endIndex = startIndex + this.pagination.size;
     
@@ -339,9 +331,8 @@ export class EquipoListComponent implements OnInit, OnDestroy {
     }
     
     this.currentFilters = {
-      search: formValue.search?.trim() || undefined,
       estadoId: formValue.estadoId || undefined,
-      tipoEquipo: formValue.tipoEquipo || undefined,
+      placa: formValue.placa || undefined,
       empresaId
     };
 
@@ -404,20 +395,15 @@ export class EquipoListComponent implements OnInit, OnDestroy {
   /**
    * Obtiene valor de campo para ordenamiento
    */
-  private getFieldValue(equipo: EquipoResponseDto, field: string): any {
+  private getFieldValue(equipo: EquipoResponse, field: string): any {
     switch (field) {
       case 'placa':
         return equipo.placa?.toLowerCase() || '';
-      case 'tipoEquipo':
-        return equipo.tipoEquipo?.toLowerCase() || '';
-      case 'marca':
-        return equipo.marca?.toLowerCase() || '';
-      case 'modelo':
-        return equipo.modelo?.toLowerCase() || '';
-      case 'estado':
-        return equipo.estadoEquipoResponse?.nombre?.toLowerCase() || '';
-      case 'anio':
-        return equipo.anio || 0;
+      case 'negocio':
+        return equipo.negocio?.toLowerCase() || '';
+      case 'equipo':
+        return equipo.equipo?.toLowerCase() || '';      case 'estado':
+        return equipo.estadoEquipoResponse?.nombre.toLowerCase() || '';
       default:
         return '';
     }
@@ -435,27 +421,25 @@ export class EquipoListComponent implements OnInit, OnDestroy {
    * Verifica si hay filtros activos
    */
   get hasActiveFilters(): boolean {
-    return !!(this.currentFilters.search || 
-              this.currentFilters.estadoId);
+    return !!(this.currentFilters.estadoId);
   }
-
   /**
    * Obtiene clase CSS para estado del equipo
    */
-  getEstadoClass(estado: EstadoEquipoDto): string {
+  getEstadoClass(estado: EstadoEquipoResponse | undefined): string {
+    if (!estado) return 'bg-gray-100 text-gray-800';
+    
     const estadoNombre = estado.nombre?.toLowerCase() || '';
     
     switch (estadoNombre) {
       case 'activo':
         return 'bg-green-100 text-green-800';
-      case 'inactivo':
-        return 'bg-gray-100 text-gray-800';
-      case 'en_mantenimiento':
-      case 'en mantenimiento':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'de_baja':
-      case 'de baja':
+      case 'inactivo':        
         return 'bg-red-100 text-red-800';
+      case 'mantenimiento':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'indisponible':
+        return 'bg-gray-100 text-gray-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -495,21 +479,21 @@ export class EquipoListComponent implements OnInit, OnDestroy {
   /**
    * Navega a detalle/edición de equipo
    */
-  onEditarEquipo(equipo: EquipoResponseDto): void {
+  onEditarEquipo(equipo: EquipoResponse): void {
     this.router.navigate(['/equipos/editar', equipo.id]);
   }
 
   /**
    * Maneja acción de ver detalle del equipo
    */
-  onVerDetalle(equipo: EquipoResponseDto): void {
+  onVerDetalle(equipo: EquipoResponse): void {
     this.router.navigate(['/equipos/detalle', equipo.id]);
   }
 
   /**
    * Función de trackBy para optimizar el renderizado de la lista
    */
-  trackByEquipoId(index: number, equipo: EquipoResponseDto): number {
+  trackByEquipoId(index: number, equipo: EquipoResponse): number {
     return equipo.id;
   }
 

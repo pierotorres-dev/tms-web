@@ -7,7 +7,7 @@
 /**
  * DTO para Tipo de Observación de Neumático
  */
-export interface TipoObservacionNeumaticoDto {
+export interface TipoObservacionNeumaticoResponse {
   id: number;
   nombre: string;
   descripcion?: string;
@@ -17,7 +17,7 @@ export interface TipoObservacionNeumaticoDto {
 /**
  * DTO para Estado de Observación
  */
-export interface EstadoObservacionDto {
+export interface EstadoObservacionResponse {
   id: number;
   nombre: string;
   descripcion?: string;
@@ -26,7 +26,7 @@ export interface EstadoObservacionDto {
 /**
  * DTO para Estado de Equipo
  */
-export interface EstadoEquipoDto {
+export interface EstadoEquipoResponse {
   id: number;
   nombre: string;
   descripcion?: string;
@@ -37,7 +37,7 @@ export interface EstadoEquipoDto {
 /**
  * DTO para crear/actualizar un equipo
  */
-export interface EquipoRequestDto {
+export interface EquipoRequest {
   placa: string;
   negocio: string;
   equipo: string;
@@ -50,14 +50,14 @@ export interface EquipoRequestDto {
 /**
  * DTO de respuesta para un equipo
  */
-export interface EquipoResponseDto {
+export interface EquipoResponse {
   id: number;
   placa: string;
   negocio: string;
   equipo: string;
   fechaInspeccion: Date;
   kilometraje: number;
-  estadoEquipoDto: EstadoEquipoDto;
+  estadoEquipoResponse?: EstadoEquipoResponse;
   empresaId: number
 }
 
@@ -66,7 +66,7 @@ export interface EquipoResponseDto {
 /**
  * DTO para crear/actualizar una observación de equipo
  */
-export interface ObservacionEquipoRequestDto {
+export interface ObservacionEquipoRequest {
   equipoId: number;
   fecha: Date;
   tipoObservacionId: number;
@@ -81,13 +81,13 @@ export interface ObservacionEquipoRequestDto {
 /**
  * DTO de respuesta para una observación de equipo
  */
-export interface ObservacionEquipoResponseDto {
+export interface ObservacionEquipoResponse {
   id: number;
   equipoId: number;
   fecha: Date;
-  tipoObservacionNeumaticoResponse: TipoObservacionNeumaticoDto;
+  tipoObservacionNeumaticoResponse: TipoObservacionNeumaticoResponse;
   descripcion?: string;
-  estadoObservacionResponse: EstadoObservacionDto;
+  estadoObservacionResponse: EstadoObservacionResponse;
   fechaResolucion?: Date;
   comentarioResolucion?: string;
   usuarioResolucion?: number;
@@ -99,7 +99,7 @@ export interface ObservacionEquipoResponseDto {
 /**
  * DTO para respuestas de error de la API
  */
-export interface ErrorResponseDto {
+export interface ErrorResponse {
   code: string;
   message: string;
   path: string;
@@ -128,12 +128,4 @@ export interface ObservacionFilters {
   tipoObservacionId?: number;
   fechaDesde?: Date;
   fechaHasta?: Date
-}
-
-/**
- * Respuesta genérica para operaciones de actualización masiva
- */
-export interface UpdateMasivoResponseDto {
-  cantidadActualizados: number;
-  mensaje?: string;
 }
