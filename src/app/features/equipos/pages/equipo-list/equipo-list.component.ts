@@ -599,8 +599,33 @@ export class EquipoListComponent implements OnInit, OnDestroy {
    * Actualiza los datos refrescando desde el servidor
    */
   refreshData(): void {
+    // Limpiar cualquier error previo
     this.error = null;
-    this.loadEquipos();
+    
+    // Establecer estado de carga inmediatamente para activar la animación
+    this.loading = true;
+    
+    // Limpiar datos actuales para mostrar un estado de carga limpio
+    // Esto evita que se muestren datos obsoletos mientras se cargan los nuevos
+    this.equipos = [];
+    this.pagination.totalElements = 0;
+    this.pagination.totalPages = 0;
+    this.pagination.currentPage = 0;
+    
+    // Limpiar filtros aplicados para una refresh completa
+    this.filterForm.reset({
+      tipoEquipoId: '',
+      estadoId: '',
+      search: ''
+    });
+    
+    // Pequeño delay para asegurar que la animación sea visible
+    // Especialmente útil para conexiones rápidas
+    setTimeout(() => {
+      // Recargar datos desde el servidor
+      // El método loadEquipos() manejará el estado de loading internamente
+      this.loadEquipos();
+    }, 100); // 100ms delay mínimo para UX
   }
 
   /**

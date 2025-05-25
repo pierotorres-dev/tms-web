@@ -5,22 +5,18 @@
       <p class="mt-2 text-sm text-gray-700">
         Administre y monitoree todos los equipos de la empresa
       </p>
-      <p class="mt-1 text-sm text-blue-600" *ngIf="selectedEmpresa">
-        <span class="font-medium">{{ selectedEmpresa.nombre }}</span>
-        <span class="text-gray-500 ml-2">(ID: {{ empresaId }})</span>
-      </p>
     </div>      <!-- Botón de nuevo equipo -->
-    <div class="mt-4 sm:mt-0 flex space-x-3">
-      <!-- Botón de refresh -->
+    <div class="mt-4 sm:mt-0 flex space-x-3">      <!-- Botón de refresh -->
       <app-tms-button 
         variant="secondary" 
         size="lg"
         [disabled]="isLoading"
         (buttonClick)="refreshData()"
         [title]="'Actualizar lista de equipos'">
-        <svg class="h-5 w-5" [class.animate-spin]="isLoading" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg class="mr-2 h-5 w-5" [class.animate-spin]="isLoading" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
         </svg>
+        <span class="hidden sm:inline">Actualizar</span>
       </app-tms-button>
 
       <!-- Botón de nuevo equipo -->
@@ -294,7 +290,6 @@
               </div>
               <div class="ml-4">
                 <div class="text-sm font-medium text-gray-900">{{ equipo.placa }}</div>
-                <div class="text-sm text-gray-500" *ngIf="equipo.placa">Código: {{ equipo.placa }}</div>
               </div>
             </div>
           </td>
@@ -304,18 +299,12 @@
             <div class="text-sm text-gray-900">
               {{ equipo.negocio || 'No especificado' }}
             </div>
-            <div class="text-sm text-gray-500" *ngIf="equipo.negocio">
-              {{ equipo.negocio }}
-            </div>
           </td>
           
           <!-- Equipo -->
           <td class="px-6 py-4 whitespace-nowrap">
             <div class="text-sm text-gray-900">
               {{ equipo.equipo || 'No especificado' }}
-            </div>
-            <div class="text-sm text-gray-500" *ngIf="equipo.equipo">
-              {{ equipo.equipo }}
             </div>
           </td>
           

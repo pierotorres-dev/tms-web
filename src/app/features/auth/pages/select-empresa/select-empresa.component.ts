@@ -6,6 +6,7 @@ import { SharedModule } from '../../../../shared/shared.module';
 import { AuthService } from '../../services/auth.service';
 import { TOKEN_STORAGE } from '../../constants/auth.constants';
 import { EmpresaInfo } from '../../models/auth.model';
+import { NotificationService } from '../../../../core/services/notification.service';
 
 @Component({
   selector: 'app-select-empresa',
@@ -17,13 +18,18 @@ import { EmpresaInfo } from '../../models/auth.model';
 export class SelectEmpresaComponent implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
+  private notificationService = inject(NotificationService);
 
   loading = true;
   error = '';
   empresas: EmpresaInfo[] = [];
   userId = 0;
   sessionToken = '';
-  ngOnInit(): void {
+  isReturningUser = false;  ngOnInit(): void {
+    // Check if this is a returning user (someone who already had a session)
+    this.isReturningUser = this.router.url.includes('returnUrl') || 
+                          localStorage.getItem(TOKEN_STORAGE.AUTH_TOKEN) !== null;
+
     // Recuperar información del usuario y empresas del localStorage
     const userData = localStorage.getItem(TOKEN_STORAGE.USER_DATA);
     const empresasData = localStorage.getItem(TOKEN_STORAGE.EMPRESAS_LIST);
@@ -37,6 +43,10 @@ export class SelectEmpresaComponent implements OnInit {
         this.userId = parsedData.userId;
         this.empresas = parsedEmpresas;
 
+        if (this.isReturningUser) {
+          this.notificationService.info('Selecciona la empresa con la que deseas trabajar');
+        }
+
         this.loading = false;
       } catch (error) {
         this.error = 'Error al cargar los datos del usuario';
@@ -46,8 +56,7 @@ export class SelectEmpresaComponent implements OnInit {
       // Si no hay datos de usuario, empresas o token de sesión, redirigir al login
       this.router.navigate(['/auth/login']);
     }
-  }
-  selectEmpresa(empresaId: number): void {
+  }  selectEmpresa(empresaId: number): void {
     this.loading = true;
     this.error = '';
 
@@ -57,19 +66,39 @@ export class SelectEmpresaComponent implements OnInit {
     if (empresaSeleccionada) {
       // Almacenar la empresa seleccionada para uso futuro
       localStorage.setItem(TOKEN_STORAGE.SELECTED_EMPRESA, JSON.stringify(empresaSeleccionada));
+      
+      // Show loading notification
+      if (this.isReturningUser) {
+        this.notificationService.info(`Cambiando a empresa: ${empresaSeleccionada.nombre}...`);
+      } else {
+        this.notificationService.info(`Accediendo como: ${empresaSeleccionada.nombre}...`);
+      }
     }
 
     // Llamar al servicio para generar un nuevo token con la empresa seleccionada
     this.authService.generateToken(this.userId, empresaId, this.sessionToken)
       .subscribe({
         next: () => {
+          // Show success notification
+          if (empresaSeleccionada) {
+            if (this.isReturningUser) {
+              this.notificationService.success(`Empresa cambiada exitosamente a: ${empresaSeleccionada.nombre}`);
+            } else {
+              this.notificationService.success(`Bienvenido a ${empresaSeleccionada.nombre}`);
+            }
+          }
           // La redirección al dashboard ya está manejada en el servicio
         },
         error: (error: any) => {
           if (error.status === 401) {
             this.error = 'Sesión expirada. Por favor, inicie sesión nuevamente.';
+            this.notificationService.error('Sesión expirada. Redirigiendo al login...');
+            setTimeout(() => {
+              this.router.navigate(['/auth/login']);
+            }, 2000);
           } else {
             this.error = 'Error al seleccionar la empresa. Por favor, inténtelo de nuevo.';
+            this.notificationService.error('Error al cambiar de empresa. Inténtalo de nuevo.');
           }
           this.loading = false;
         }

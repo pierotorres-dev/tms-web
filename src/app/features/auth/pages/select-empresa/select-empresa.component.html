@@ -27,10 +27,10 @@
             <div class="flex items-center space-x-3">
               <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
                 {{ getEmpresaInitials(empresa.nombre) }}
-              </div>
-              <div>
+              </div>              <div>
                 <p class="text-base font-semibold text-gray-900">{{ empresa.nombre }}</p>
-                <p class="text-sm text-gray-500 mt-1" *ngIf="empresa.email">{{ empresa.email }}</p>
+                <p class="text-sm text-gray-500 mt-1">ID: {{ empresa.id }}</p>
+                <p class="text-xs text-blue-600 font-medium" *ngIf="empresa.email">{{ empresa.email }}</p>
               </div>
             </div>
           </div>
