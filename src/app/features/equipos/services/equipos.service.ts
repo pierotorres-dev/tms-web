@@ -186,23 +186,47 @@ export class EquiposService {
   // ==================== MÉTODOS PRIVADOS ====================
   /**
    * Aplica filtros localmente a una lista de equipos
-   */
-  private aplicarFiltrosLocales(equipos: EquipoResponse[], filtros: EquipoFilters): EquipoResponse[] {
+   */  private aplicarFiltrosLocales(equipos: EquipoResponse[], filtros: EquipoFilters): EquipoResponse[] {
+    // Debug log para desarrollo (se puede eliminar en producción)
+    if (console && typeof console.log === 'function') {
+      console.log('🔍 Aplicando filtros locales:', {
+        totalEquipos: equipos.length,
+        filtros: filtros,
+        tipoEstadoId: typeof filtros.estadoId,
+        valorEstadoId: filtros.estadoId
+      });
+    }
+
     const equiposFiltrados = equipos.filter(equipo => {
-      // Filtro por estado
-      if (filtros.estadoId !== undefined) {
+      // Filtro por estado - Asegurar comparación consistente de tipos
+      if (filtros.estadoId !== undefined && filtros.estadoId !== null && filtros.estadoId > 0) {
         const equipoEstadoId = equipo.estadoEquipoResponse?.id;
-        if (equipoEstadoId !== filtros.estadoId) {
+        const filtroEstadoId = Number(filtros.estadoId); // Asegurar que sea número
+        
+        // Debug específico para filtro de estado
+        if (console && typeof console.log === 'function') {
+          console.log('🏷️ Comparando estado:', {
+            equipoId: equipo.id,
+            equipoPlaca: equipo.placa,
+            equipoEstadoId: equipoEstadoId,
+            tipoEquipoEstadoId: typeof equipoEstadoId,
+            filtroEstadoId: filtroEstadoId,
+            tipoFiltroEstadoId: typeof filtroEstadoId,
+            coincide: equipoEstadoId === filtroEstadoId
+          });
+        }
+        
+        if (!equipoEstadoId || equipoEstadoId !== filtroEstadoId) {
           return false;
         }
       }
 
       // Filtro de búsqueda general (placa, equipo, negocio)
-      if (filtros.placa) {
-        const searchTerm = filtros.placa.toUpperCase();
-        const placaMatch = equipo.placa?.toUpperCase().includes(searchTerm);
-        const equipoMatch = equipo.equipo?.toUpperCase().includes(searchTerm);
-        const negocioMatch = equipo.negocio?.toUpperCase().includes(searchTerm);
+      if (filtros.placa && filtros.placa.trim().length > 0) {
+        const searchTerm = filtros.placa.trim().toUpperCase();
+        const placaMatch = equipo.placa?.toUpperCase().includes(searchTerm) || false;
+        const equipoMatch = equipo.equipo?.toUpperCase().includes(searchTerm) || false;
+        const negocioMatch = equipo.negocio?.toUpperCase().includes(searchTerm) || false;
         
         if (!placaMatch && !equipoMatch && !negocioMatch) {
           return false;
@@ -210,15 +234,30 @@ export class EquiposService {
       }
 
       // Filtro específico por tipo de equipo
-      if (filtros.equipo && equipo.equipo && !equipo.equipo.toUpperCase().includes(filtros.equipo.toUpperCase())) {
-        return false;
+      if (filtros.equipo && filtros.equipo.trim().length > 0) {
+        if (!equipo.equipo || !equipo.equipo.toUpperCase().includes(filtros.equipo.trim().toUpperCase())) {
+          return false;
+        }
       }
 
       // Filtro específico por negocio
-      if (filtros.negocio && equipo.negocio && !equipo.negocio.toUpperCase().includes(filtros.negocio.toUpperCase())) {
-        return false;
-      }      return true;
+      if (filtros.negocio && filtros.negocio.trim().length > 0) {
+        if (!equipo.negocio || !equipo.negocio.toUpperCase().includes(filtros.negocio.trim().toUpperCase())) {
+          return false;
+        }
+      }
+
+      return true;
     });
+    
+    // Debug final
+    if (console && typeof console.log === 'function') {
+      console.log('✅ Filtros aplicados:', {
+        equiposOriginales: equipos.length,
+        equiposFiltrados: equiposFiltrados.length,
+        equiposEliminados: equipos.length - equiposFiltrados.length
+      });
+    }
     
     return equiposFiltrados;
   }

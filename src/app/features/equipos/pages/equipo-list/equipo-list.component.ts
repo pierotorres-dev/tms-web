@@ -12,6 +12,7 @@ import { EmpresaContextService } from '../../../../core/services/empresa-context
 import { AuthService } from '../../../auth/services/auth.service';
 import { EstadoUtilsService } from '../../utils/estado-utils.service';
 import { TmsButtonComponent } from '../../../../shared/components/tms-button/tms-button.component';
+import { environment } from '../../../../../environments/environment';
 
 // Interfaces para paginación
 interface PaginatedEquipos {
@@ -223,29 +224,34 @@ export class EquipoListComponent implements OnInit, OnDestroy {
    * Configura subscripciones para filtros con debounce
    */
   private setupFilterSubscriptions(): void {
-    // Búsqueda con debounce
-    this.filterForm.get('search')?.valueChanges
+    // Usar valueChanges del formulario completo en lugar de controles individuales
+    // Esto asegura que obtenemos los valores actualizados después del cambio
+    this.filterForm.valueChanges
       .pipe(
-        debounceTime(500),
-        distinctUntilChanged(),
+        debounceTime(300), // Reducir debounce para mejor respuesta
+        distinctUntilChanged((prev, curr) => {
+          // Comparación personalizada para evitar aplicar filtros innecesarios
+          return prev?.search === curr?.search && prev?.estadoId === curr?.estadoId;
+        }),
         takeUntil(this.destroy$)
       )
-      .subscribe(() => {
-        this.applyFilters();
-      });
-
-    // Filtros inmediatos
-    this.filterForm.get('estadoId')?.valueChanges
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
-        this.applyFilters();
+      .subscribe((formValue) => {
+        // Debug en desarrollo
+        if (console && typeof console.log === 'function' && !environment.production) {
+          console.log('📝 Formulario cambió:', formValue);
+        }
+        
+        // Solo aplicar filtros si el componente está completamente inicializado
+        if (!this.loadingStates.initializing && !this.loadingStates.catalogos) {
+          this.applyFiltersFromFormValue(formValue);
+        }
       });
   }/**
    * Carga equipos con validaciones mejoradas
    */
   loadEquipos(): void {
     this.loadingStates.equipos = true;
-    this.error = null;
+    this.error = null; // Limpiar errores previos
 
     // Verificación de seguridad antes de cargar
     if (!this.authService.getToken()) {
@@ -264,6 +270,11 @@ export class EquipoListComponent implements OnInit, OnDestroy {
       ...this.currentFilters,
       empresaId
     };
+
+    // Debug en desarrollo
+    if (console && typeof console.log === 'function') {
+      console.log('📋 Cargando equipos con filtros:', filtrosConEmpresa);
+    }
 
     this.equiposService.searchEquipos(filtrosConEmpresa, { showErrorNotification: false })
       .pipe(
@@ -312,12 +323,10 @@ export class EquipoListComponent implements OnInit, OnDestroy {
     this.pagination.totalElements = allEquipos.length;
     this.pagination.totalPages = Math.ceil(allEquipos.length / this.pagination.size);
   }  /**
-   * Aplica filtros actuales
-   * Nota: El campo 'search' se mapea a 'placa' en EquipoFilters para búsqueda general
-   * que incluye placa, equipo y negocio en el servicio
+   * Aplica filtros desde los valores del formulario 
+   * (usado por valueChanges subscription)
    */
-  applyFilters(): void {
-    const formValue = this.filterForm.value;
+  private applyFiltersFromFormValue(formValue: any): void {
     const empresaId = this.empresaContextService.getCurrentEmpresaId();
     
     if (!empresaId) {
@@ -326,28 +335,68 @@ export class EquipoListComponent implements OnInit, OnDestroy {
     }
     
     // Convertir estadoId a number si existe, ya que los select HTML devuelven strings
-    const estadoId = formValue.estadoId ? Number(formValue.estadoId) : undefined;
-      this.currentFilters = {
+    let estadoId: number | undefined = undefined;
+    if (formValue.estadoId && formValue.estadoId !== '' && formValue.estadoId !== '0') {
+      estadoId = Number(formValue.estadoId);
+      // Validar que la conversión fue exitosa
+      if (isNaN(estadoId) || estadoId <= 0) {
+        estadoId = undefined;
+      }
+    }
+
+    // Construir filtros con validaciones
+    this.currentFilters = {
       empresaId,
       estadoId,
       placa: formValue.search?.trim() || undefined
     };
 
+    // Debug en desarrollo
+    if (console && typeof console.log === 'function' && !environment.production) {
+      console.log('🎯 Aplicando filtros desde valueChanges:', {
+        formValue: formValue,
+        estadoIdOriginal: formValue.estadoId,
+        estadoIdProcesado: estadoId,
+        filtrosFinales: this.currentFilters
+      });
+    }
+
     // Resetear paginación al aplicar filtros
     this.pagination.currentPage = 0;
     this.loadEquipos();
-  }/**
+  }
+
+  /**
+   * Aplica filtros actuales (método público para botones)
+   * Nota: Ahora usa los valores actuales del formulario directamente
+   */
+  applyFilters(): void {
+    const formValue = this.filterForm.value;
+    this.applyFiltersFromFormValue(formValue);
+  }  /**
    * Limpia todos los filtros
    */
   clearFilters(): void {
     const empresaId = this.empresaContextService.getCurrentEmpresaId();
     
-    this.filterForm.reset({
+    // Resetear formulario sin disparar valueChanges
+    this.filterForm.setValue({
       search: '',
       estadoId: ''
-    });
+    }, { emitEvent: false });
+    
+    // Limpiar filtros actuales manualmente
     this.currentFilters = { empresaId: empresaId || undefined };
+    
+    // Limpiar errores y resetear paginación
+    this.error = null;
     this.pagination.currentPage = 0;
+    
+    // Debug
+    if (console && typeof console.log === 'function' && !environment.production) {
+      console.log('🧹 Filtros limpiados, recargando equipos...');
+    }
+    
     this.loadEquipos();
   }
 
@@ -408,7 +457,6 @@ export class EquipoListComponent implements OnInit, OnDestroy {
         return '';
     }
   }
-
   /**
    * Obtiene clase CSS para indicador de ordenamiento
    */
@@ -416,13 +464,50 @@ export class EquipoListComponent implements OnInit, OnDestroy {
     if (this.sortField !== field) return '';
     return this.sortDirection === 'asc' ? 'sort-asc' : 'sort-desc';
   }
+
   /**
    * Verifica si hay filtros activos
    */
   get hasActiveFilters(): boolean {
     const formValue = this.filterForm.value;
-    return !!(formValue.search?.trim() || formValue.estadoId);
-  }  /**
+    return !!(formValue.search?.trim() || (formValue.estadoId && formValue.estadoId !== '' && formValue.estadoId !== '0'));
+  }
+
+  /**
+   * Cuenta cuántos filtros están activos
+   */
+  getActiveFiltersCount(): number {
+    const formValue = this.filterForm.value;
+    let count = 0;
+    
+    if (formValue.search?.trim()) count++;
+    if (formValue.estadoId && formValue.estadoId !== '' && formValue.estadoId !== '0') count++;
+    
+    return count;
+  }
+
+  /**
+   * Obtiene descripción de filtros activos para UX
+   */
+  getActiveFiltersDescription(): string {
+    const formValue = this.filterForm.value;
+    const filters: string[] = [];
+    
+    if (formValue.search?.trim()) {
+      filters.push(`Búsqueda: "${formValue.search.trim()}"`);
+    }
+    
+    if (formValue.estadoId && formValue.estadoId !== '' && formValue.estadoId !== '0') {
+      const estado = this.estadosEquipo.find(e => e.id === Number(formValue.estadoId));
+      if (estado) {
+        filters.push(`Estado: ${estado.nombre}`);
+      }
+    }
+    
+    return filters.join(' | ');
+  }
+
+  /**
    * Obtiene clase CSS para estado del equipo usando el servicio de utilidades
    */
   getEstadoClass(estado: EstadoEquipoResponse | undefined): string {
@@ -530,5 +615,43 @@ export class EquipoListComponent implements OnInit, OnDestroy {
   retryLoadData(): void {
     this.error = null;
     this.initializeComponent();
+  }
+
+  /**
+   * Utilidad para logging de debug (solo en desarrollo)
+   */
+  private debugLog(message: string, data?: any): void {
+    // Solo hacer log en modo desarrollo
+    if (console && typeof console.log === 'function' && !environment.production) {
+      if (data) {
+        console.log(`🔧 [EquipoList] ${message}`, data);
+      } else {
+        console.log(`🔧 [EquipoList] ${message}`);
+      }
+    }
+  }
+
+  /**
+   * Valida que los datos de estados estén cargados correctamente
+   */
+  private validateEstadosData(): boolean {
+    if (!this.estadosEquipo || this.estadosEquipo.length === 0) {
+      this.debugLog('⚠️ Estados de equipo no cargados o vacíos');
+      return false;
+    }
+    
+    // Verificar que todos los estados tienen ID y nombre
+    const invalidEstados = this.estadosEquipo.filter(estado => !estado.id || !estado.nombre);
+    if (invalidEstados.length > 0) {
+      this.debugLog('⚠️ Estados inválidos encontrados:', invalidEstados);
+      return false;
+    }
+    
+    this.debugLog('✅ Estados validados correctamente:', {
+      total: this.estadosEquipo.length,
+      estados: this.estadosEquipo.map(e => ({ id: e.id, nombre: e.nombre }))
+    });
+    
+    return true;
   }
 }
