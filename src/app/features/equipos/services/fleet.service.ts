@@ -17,7 +17,7 @@ import {
   UpdateMasivoResponseDto
 } from '../models/fleet.dto';
 
-import { FleetMapper, FleetServiceOptions, PaginationConfig, PaginatedResponse } from '../models/fleet.model';
+import { FleetMapper, FleetServiceOptions } from '../models/fleet.model';
 import { Equipo } from '../models/equipo.model';
 import { FLEET_API_ENDPOINTS, FLEET_MESSAGES, FLEET_PAGINATION_CONFIG, FLEET_CACHE_CONFIG } from '../constants/equipos.constants';
 
@@ -459,20 +459,6 @@ export class FleetService {
    */
   getEstadoEquipoById(id: number): EstadoEquipoDto | undefined {
     return this._estadosEquipo$.value.find(estado => estado.id === id);
-  }
-
-  /**
-   * Convierte EquipoResponseDto a modelo de dominio
-   */
-  mapToDomainEquipo(dto: EquipoResponseDto): Equipo {
-    return FleetMapper.toDomainEquipo(dto);
-  }
-
-  /**
-   * Convierte modelo de dominio a EquipoRequestDto
-   */
-  mapToRequestDto(equipo: Partial<Equipo>): EquipoRequestDto {
-    return FleetMapper.toRequestDto(equipo);
   }
 
   // ==================== MÉTODOS PRIVADOS ====================

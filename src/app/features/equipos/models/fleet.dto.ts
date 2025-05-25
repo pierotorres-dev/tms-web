@@ -39,26 +39,12 @@ export interface EstadoEquipoDto {
  */
 export interface EquipoRequestDto {
   placa: string;
-  negocio?: string;
-  equipo?: string;
-  fechaInspeccion?: Date;
-  kilometraje?: number;
+  negocio: string;
+  equipo: string;
+  fechaInspeccion: Date;
+  kilometraje: number;
   estadoId: number;
-  empresaId: number;
-  // Campos adicionales para formulario completo
-  codigo?: string;
-  tipoEquipo?: string;
-  modelo?: string;
-  marca?: string;
-  anio?: number;
-  numeroChasis?: string;
-  numeroMotor?: string;
-  capacidadCarga?: number;
-  kmActual?: number;
-  horasOperacion?: number;
-  observaciones?: string;
-  fechaCompra?: Date;
-  fechaVencimientoSeguro?: Date;
+  empresaId: number
 }
 
 /**
@@ -67,27 +53,12 @@ export interface EquipoRequestDto {
 export interface EquipoResponseDto {
   id: number;
   placa: string;
-  negocio?: string;
-  equipo?: string;
-  fechaInspeccion?: Date;
-  kilometraje?: number;
-  estadoEquipoResponse: EstadoEquipoDto;
-  empresaId: number;
-  // Campos adicionales para respuesta completa
-  codigo?: string;
-  tipoEquipo?: string;
-  modelo?: string;
-  marca?: string;
-  anio?: number;
-  numeroChasis?: string;
-  numeroMotor?: string;
-  estadoId?: number;
-  capacidadCarga?: number;
-  kmActual?: number;
-  horasOperacion?: number;
-  observaciones?: string;
-  fechaCompra?: Date;
-  fechaVencimientoSeguro?: Date;
+  negocio: string;
+  equipo: string;
+  fechaInspeccion: Date;
+  kilometraje: number;
+  estadoEquipoDto: EstadoEquipoDto;
+  empresaId: number
 }
 
 // ==================== OBSERVACIONES DTOs ====================
@@ -97,14 +68,14 @@ export interface EquipoResponseDto {
  */
 export interface ObservacionEquipoRequestDto {
   equipoId: number;
-  fecha?: Date;
+  fecha: Date;
   tipoObservacionId: number;
-  descripcion?: string;
+  descripcion: string;
   estadoId: number;
-  fechaResolucion?: Date;
-  comentarioResolucion?: string;
-  usuarioResolucion?: string;
-  usuarioId?: number;
+  fechaResolucion: Date;
+  comentarioResolucion: string;
+  usuarioResolucion: number;
+  usuarioId: number
 }
 
 /**
@@ -119,7 +90,7 @@ export interface ObservacionEquipoResponseDto {
   estadoObservacionResponse: EstadoObservacionDto;
   fechaResolucion?: Date;
   comentarioResolucion?: string;
-  usuarioResolucion?: string;
+  usuarioResolucion?: number;
   usuarioId?: number;
 }
 
@@ -145,10 +116,7 @@ export interface EquipoFilters {
   estadoId?: number;
   placa?: string;
   equipo?: string;
-  negocio?: string;
-  // Campos adicionales para búsqueda y filtrado
-  search?: string;
-  tipoEquipo?: string;
+  negocio?: string
 }
 
 /**
@@ -159,12 +127,7 @@ export interface ObservacionFilters {
   estadoId?: number;
   tipoObservacionId?: number;
   fechaDesde?: Date;
-  fechaHasta?: Date;
-  usuarioId?: number;
-  // Campos adicionales para búsqueda y filtrado
-  search?: string;
-  estadoObservacionId?: number;
-  esCritica?: boolean;
+  fechaHasta?: Date
 }
 
 /**

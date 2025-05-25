@@ -436,8 +436,7 @@ export class EquipoListComponent implements OnInit, OnDestroy {
    */
   get hasActiveFilters(): boolean {
     return !!(this.currentFilters.search || 
-              this.currentFilters.estadoId || 
-              this.currentFilters.tipoEquipo);
+              this.currentFilters.estadoId);
   }
 
   /**

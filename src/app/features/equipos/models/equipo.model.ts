@@ -3,18 +3,13 @@
  */
 export interface Equipo {
   id: number;
-  codigo: string;
-  tipo: string;
-  marca: string;
-  modelo: string;
-  serie: string;
-  anio: number;
-  estado: EstadoEquipo;
-  empresaId: number;
-  ultimaInspeccion?: Date;
-  posicionesNeumaticos: number;
-  fechaCreacion?: Date;
-  fechaActualizacion?: Date;
+  placa: string;
+  negocio: string;
+  equipo: string;
+  fechaInspeccion: Date;
+  kilometraje: number;
+  estadoId: number;
+  empresaId: number
 }
 
 /**
