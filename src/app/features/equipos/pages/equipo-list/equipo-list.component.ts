@@ -11,7 +11,9 @@ import { EquipoResponse, EstadoEquipoResponse, EquipoFilters } from '../../model
 import { EmpresaContextService } from '../../../../core/services/empresa-context.service';
 import { AuthService } from '../../../auth/services/auth.service';
 import { EstadoUtilsService } from '../../utils/estado-utils.service';
+import { InspectionStatusService } from '../../utils/inspection-status.service';
 import { TmsButtonComponent } from '../../../../shared/components/tms-button/tms-button.component';
+import { InspectionIndicatorComponent } from '../../components/inspection-indicator/inspection-indicator.component';
 import { environment } from '../../../../../environments/environment';
 
 // Interfaces para paginación
@@ -26,7 +28,7 @@ interface PaginatedEquipos {
 @Component({
   selector: 'app-equipo-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, TmsButtonComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, TmsButtonComponent, InspectionIndicatorComponent],
   templateUrl: './equipo-list.component.html',
   styleUrl: './equipo-list.component.css'
 })
@@ -37,6 +39,7 @@ export class EquipoListComponent implements OnInit, OnDestroy {
   private readonly empresaContextService = inject(EmpresaContextService);
   private readonly authService = inject(AuthService);
   private readonly estadoUtils = inject(EstadoUtilsService);
+  private readonly inspectionStatusService = inject(InspectionStatusService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
 
@@ -62,7 +65,6 @@ export class EquipoListComponent implements OnInit, OnDestroy {
   // Ordenamiento
   sortField = '';
   sortDirection: 'asc' | 'desc' = 'asc';
-
   // Estados de carga más granulares
   loadingStates = {
     initializing: true,
@@ -71,20 +73,27 @@ export class EquipoListComponent implements OnInit, OnDestroy {
     authentication: false
   };
 
+  // Estado del panel de inspecciones
+  inspectionPanelState = {
+    isVisible: true,
+    isDismissed: false,
+    lastDismissedTime: null as number | null
+  };
+
   // Información de contexto para debugging (solo en desarrollo)
   debugInfo = {
     hasToken: false,
     hasEmpresa: false,
     empresaId: null as number | null,
     empresaName: '' as string
-  };
-  constructor() {
+  };  constructor() {
     this.filterForm = this.fb.group({
       search: [''],
       estadoId: ['']
     });
 
     this.setupFilterSubscriptions();
+    this.loadInspectionPanelPreferences();
   }
 
   ngOnInit(): void {
@@ -691,5 +700,148 @@ export class EquipoListComponent implements OnInit, OnDestroy {
     });
 
     return true;
+  }  /**
+   * Obtiene un resumen del estado de inspecciones de todos los equipos
+   * Este método incluye TODOS los equipos para mantener los indicadores visuales
+   */
+  getInspectionsSummary() {
+    return this.inspectionStatusService.getInspectionsSummary(this.equipos);
+  }
+
+  /**
+   * Obtiene un resumen del estado de inspecciones para el panel de conteo
+   * Este método EXCLUYE equipos con estado "Indisponible" e "Inactivo" de los contadores
+   */
+  getInspectionsSummaryForCounts() {
+    return this.inspectionStatusService.getInspectionsSummaryForCounts(this.equipos);
+  }
+
+  /**
+   * Obtiene equipos con inspecciones vencidas (TODOS los equipos para indicadores visuales)
+   */
+  getEquiposWithOverdueInspections(): EquipoResponse[] {
+    return this.equipos.filter(equipo => 
+      this.inspectionStatusService.isInspectionOverdue(equipo.fechaInspeccion)
+    );
+  }
+
+  /**
+   * Obtiene equipos con inspecciones vencidas excluyendo estados específicos (para contadores)
+   */
+  getEquiposWithOverdueInspectionsForCounts(): EquipoResponse[] {
+    return this.equipos.filter(equipo => {
+      // Primero verificar el estado del equipo
+      if (equipo.estadoEquipoResponse?.nombre) {
+        const estadoNombre = equipo.estadoEquipoResponse.nombre.toLowerCase().trim();
+        if (estadoNombre === 'indisponible' || estadoNombre === 'inactivo') {
+          return false; // Excluir de los contadores
+        }
+      }
+      
+      // Luego verificar si la inspección está vencida
+      return this.inspectionStatusService.isInspectionOverdue(equipo.fechaInspeccion);
+    });
+  }
+
+  /**
+   * Obtiene el estado de inspección para un equipo específico
+   */
+  getInspectionStatus(fechaInspeccion: Date | string | null | undefined) {
+    return this.inspectionStatusService.calculateInspectionStatus(fechaInspeccion);
+  }
+  /**
+   * Verifica si hay equipos con inspecciones críticas (para mostrar/ocultar el panel)
+   * Usa el conteo excluyendo equipos con estados específicos
+   */
+  get hasCriticalInspections(): boolean {
+    return this.getEquiposWithOverdueInspectionsForCounts().length > 0;
+  }
+  /**
+   * Obtiene el conteo de equipos por estado de inspección
+   * Usa el método que excluye equipos con estados específicos para los contadores
+   */
+  get inspectionStatusCounts() {
+    const summary = this.getInspectionsSummaryForCounts();
+    return {
+      critical: summary.critical,
+      warning: summary.warning,
+      good: summary.good,
+      total: summary.total
+    };
+  }
+
+  // ==================== MÉTODOS DEL PANEL DE INSPECCIONES ====================
+
+  /**
+   * Determina si el panel de inspecciones debe mostrarse
+   */
+  get shouldShowInspectionPanel(): boolean {
+    return this.hasCriticalInspections && 
+           this.inspectionPanelState.isVisible && 
+           !this.inspectionPanelState.isDismissed;
+  }
+
+  /**
+   * Cierra el panel de inspecciones
+   */
+  dismissInspectionPanel(): void {
+    this.inspectionPanelState.isDismissed = true;
+    this.inspectionPanelState.isVisible = false;
+    this.inspectionPanelState.lastDismissedTime = Date.now();
+    this.saveInspectionPanelPreferences();
+  }
+
+  /**
+   * Restaura el panel de inspecciones (opcional, para casos donde el usuario quiera verlo de nuevo)
+   */
+  showInspectionPanel(): void {
+    this.inspectionPanelState.isDismissed = false;
+    this.inspectionPanelState.isVisible = true;
+    this.inspectionPanelState.lastDismissedTime = null;
+    this.saveInspectionPanelPreferences();
+  }
+
+  /**
+   * Carga las preferencias del panel desde localStorage
+   */
+  private loadInspectionPanelPreferences(): void {
+    try {
+      const stored = localStorage.getItem('tms-inspection-panel-preferences');
+      if (stored) {
+        const preferences = JSON.parse(stored);
+        
+        // Si fue cerrado hace más de 24 horas, volver a mostrarlo
+        const dayInMs = 24 * 60 * 60 * 1000;
+        const now = Date.now();
+        
+        if (preferences.lastDismissedTime && 
+            (now - preferences.lastDismissedTime) > dayInMs) {
+          // Reset después de 24 horas
+          this.inspectionPanelState.isDismissed = false;
+          this.inspectionPanelState.isVisible = true;
+          this.inspectionPanelState.lastDismissedTime = null;
+        } else {
+          this.inspectionPanelState = {
+            ...this.inspectionPanelState,
+            ...preferences
+          };
+        }
+      }
+    } catch (error) {
+      console.warn('Error al cargar preferencias del panel de inspecciones:', error);
+      // En caso de error, usar valores por defecto (panel visible)
+    }
+  }
+
+  /**
+   * Guarda las preferencias del panel en localStorage
+   */
+  private saveInspectionPanelPreferences(): void {
+    try {
+      localStorage.setItem('tms-inspection-panel-preferences', 
+        JSON.stringify(this.inspectionPanelState));
+    } catch (error) {
+      console.warn('Error al guardar preferencias del panel de inspecciones:', error);
+    }
   }
 }
