@@ -2,7 +2,7 @@ import { HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject, PLATFORM_ID } from '@angular/core'; // Import PLATFORM_ID
 import { isPlatformBrowser } from '@angular/common'; // Import isPlatformBrowser
 import { Router } from '@angular/router';
-import { BehaviorSubject, Observable, catchError, map, of, tap } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, map, of, tap, throwError } from 'rxjs';
 
 import { AUTH_API, TOKEN_STORAGE } from '../constants/auth.constants';
 import { HttpService } from '../../../core/services/http.service';
@@ -143,56 +143,24 @@ export class AuthService {
         ).pipe(
             catchError(() => of(false))
         );
-    }
-
-    /**
+    }    /**
      * Realiza la autenticación del usuario
+     * 
+     * Flujo según el número de empresas:
+     * - Múltiples empresas: Se almacenan datos temporales y sessionToken para posterior selección
+     * - Una empresa: Se usa el token final directamente sin necesidad de generateToken
+     * - Sin empresas: Se configura sesión básica sin empresaId
      */
     login(credentials: LoginRequest): Observable<LoginResponse> {
-        this.loadingSubject.next(true); return this.http.post<LoginResponse>(
+        this.loadingSubject.next(true);
+
+        return this.http.post<LoginResponse>(
             AUTH_API.LOGIN,
             credentials,
             { showErrorNotification: false } // Manejamos los errores específicamente en el componente
         ).pipe(
-            tap(response => {                // Si el usuario tiene múltiples empresas, se redirigirá a la selección
-                if (response.empresas && response.empresas.length > 1) {
-                    // Guardamos el token de sesión temporal
-                    localStorage.setItem(TOKEN_STORAGE.SESSION_TOKEN, response.sessionToken);
-                    localStorage.setItem(TOKEN_STORAGE.USER_DATA, JSON.stringify({
-                        userId: response.userId,
-                        userName: response.userName,
-                        role: response.role,
-                        name: response.name,
-                        lastName: response.lastName
-                    }));
-                    // Guardamos las empresas disponibles para la selección
-                    localStorage.setItem(TOKEN_STORAGE.EMPRESAS_LIST, JSON.stringify(response.empresas));
-
-                    this.notificationService.success(`Bienvenido, ${response.name}. Por favor seleccione una empresa.`);
-                } else if (response.empresas && response.empresas.length === 1) {
-                    // Si solo tiene una empresa, generamos el token directamente
-                    this.generateToken(response.userId, response.empresas[0].id, response.sessionToken)
-                        .subscribe({
-                            next: () => {
-                                // Establecer la empresa seleccionada automáticamente
-                                this.setSelectedEmpresa(response.empresas[0]);
-                                this.notificationService.success(`Bienvenido, ${response.name}`);
-                            }
-                        });
-                } else {
-                    // Si no tiene empresas asociadas, guardamos la información básica
-                    this.setUserSession({
-                        userId: response.userId,
-                        userName: response.userName,
-                        role: response.role,
-                        token: response.token,
-                        name: response.name,
-                        lastName: response.lastName
-                    });
-
-                    this.notificationService.success(`Bienvenido, ${response.name}`);
-                    this.router.navigate(['/dashboard']);
-                }
+            tap(response => {
+                this.handleLoginResponse(response);
             }),
             catchError(error => {
                 this.loadingSubject.next(false);
@@ -201,10 +169,152 @@ export class AuthService {
             tap(() => this.loadingSubject.next(false))
         );
     }
+
+    /**
+     * Maneja la respuesta del login según el número de empresas asignadas al usuario
+     */
+    private handleLoginResponse(response: LoginResponse): void {
+        const flujoAutenticacion = this.determineAuthFlow(response.empresas);
+
+        // Validar los requisitos según el flujo de autenticación
+        const requisitosValidos = this.validateAuthFlowRequirements(flujoAutenticacion, response);
+        if (!requisitosValidos) {
+            this.notificationService.error('Error: Datos de autenticación inválidos. Contacte al administrador.');
+            this.loadingSubject.next(false);
+            return;
+        }
+
+        switch (flujoAutenticacion) {
+            case 'multiple':
+                // Múltiples empresas: guardar datos temporales y redirigir a selección
+                this.handleMultipleEmpresasScenario(response);
+                break;
+            case 'single':
+                // Una sola empresa: usar el token directamente sin generateToken
+                this.handleSingleEmpresaScenario(response);
+                break;
+            case 'none':
+                // Sin empresas: configurar sesión básica
+                this.handleNoEmpresasScenario(response);
+                break;
+        }
+    }    /**
+     * Maneja el escenario cuando el usuario tiene múltiples empresas asignadas
+     */
+    private handleMultipleEmpresasScenario(response: LoginResponse): void {
+        // Validar que tenemos el sessionToken necesario para múltiples empresas
+        if (!response.sessionToken) {
+            this.notificationService.error('Error: Token de sesión no recibido. Contacte al administrador.');
+            this.loadingSubject.next(false);
+            return;
+        }
+
+        // Guardamos el token de sesión temporal para usar con generateToken
+        localStorage.setItem(TOKEN_STORAGE.SESSION_TOKEN, response.sessionToken);
+        localStorage.setItem(TOKEN_STORAGE.USER_DATA, JSON.stringify({
+            userId: response.userId,
+            userName: response.userName,
+            role: response.role,
+            name: response.name,
+            lastName: response.lastName
+        }));
+        // Guardamos las empresas disponibles para la selección
+        localStorage.setItem(TOKEN_STORAGE.EMPRESAS_LIST, JSON.stringify(response.empresas));
+
+        this.notificationService.success(`Bienvenido, ${response.name}. Por favor seleccione una empresa.`);
+        // La redirección a select-empresa se maneja en el componente login
+    }
+
+    /**
+     * Maneja el escenario cuando el usuario tiene una sola empresa asignada
+     */
+    private handleSingleEmpresaScenario(response: LoginResponse): void {
+        const empresa = response.empresas[0];
+
+        // Validar que tenemos el token necesario para una empresa
+        if (!response.token) {
+            this.notificationService.error('Error: Token de autenticación no recibido. Contacte al administrador.');
+            this.loadingSubject.next(false);
+            return;
+        }
+
+        // Establecer la sesión completa con el token ya proporcionado
+        this.setUserSession({
+            userId: response.userId,
+            userName: response.userName,
+            role: response.role,
+            token: response.token, // Usar el token del login directamente
+            empresaId: empresa.id,
+            name: response.name,
+            lastName: response.lastName
+        });
+
+        // Establecer la empresa seleccionada
+        this.setSelectedEmpresa(empresa);
+
+        this.notificationService.success(`Bienvenido a ${empresa.nombre}, ${response.name}`);
+        this.router.navigate(['/dashboard']);
+    }
+
+    /**
+     * Maneja el escenario cuando el usuario no tiene empresas asignadas
+     */
+    private handleNoEmpresasScenario(response: LoginResponse): void {
+        // Configurar sesión básica sin empresa
+        this.setUserSession({
+            userId: response.userId,
+            userName: response.userName,
+            role: response.role,
+            token: response.token,
+            name: response.name,
+            lastName: response.lastName
+        });
+
+        this.notificationService.success(`Bienvenido, ${response.name}`);
+        this.router.navigate(['/dashboard']);
+    }    /**
+     * Método auxiliar para determinar el flujo de autenticación basado en las empresas
+     */
+    private determineAuthFlow(empresas: EmpresaInfo[] | null): 'multiple' | 'single' | 'none' {
+        if (!empresas || empresas.length === 0) {
+            return 'none';
+        }
+        return empresas.length > 1 ? 'multiple' : 'single';
+    }
+
+    /**
+     * Valida los datos necesarios para cada flujo de autenticación
+     */
+    private validateAuthFlowRequirements(flow: 'multiple' | 'single' | 'none', response: LoginResponse): boolean {
+        switch (flow) {
+            case 'multiple':
+                return !!response.sessionToken && !!response.empresas && response.empresas.length > 1;
+            case 'single':
+                return !!response.token && !!response.empresas && response.empresas.length === 1;
+            case 'none':
+                return !!response.token;
+            default:
+                return false;
+        }
+    }
+
     /**
      * Genera un token para un usuario y empresa específicos
+     * 
+     * Este método debe usarse SOLO cuando:
+     * - El usuario tiene múltiples empresas asignadas
+     * - Se tiene un sessionToken válido del login inicial
+     * - El usuario ha seleccionado una empresa específica
+     * 
+     * NO usar cuando el usuario tiene una sola empresa (el token ya viene en el login)
      */
     generateToken(userId: number, empresaId: number, sessionToken: string): Observable<AuthResponse> {
+        // Validación preventiva
+        if (!sessionToken) {
+            this.notificationService.error('Error: Token de sesión requerido para generar token de empresa.');
+            return throwError(() => new Error('Session token required'));
+        }
+
         this.loadingSubject.next(true);
 
         const params = this.http.buildParams({

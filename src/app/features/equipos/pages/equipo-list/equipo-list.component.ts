@@ -7,7 +7,7 @@ import { takeUntil, debounceTime, distinctUntilChanged, filter, catchError } fro
 
 // Importar servicios y modelos
 import { FleetService, EquiposService } from '../../services';
-import { EquipoResponse, EstadoEquipoResponse, EquipoFilters } from '../../models';
+import { EquipoResponse, EstadoEquipoResponse, EquipoFilters, InspectionFilterType } from '../../models';
 import { EmpresaContextService } from '../../../../core/services/empresa-context.service';
 import { AuthService } from '../../../auth/services/auth.service';
 import { EstadoUtilsService } from '../../utils/estado-utils.service';
@@ -48,10 +48,18 @@ export class EquipoListComponent implements OnInit, OnDestroy {
   estadosEquipo: EstadoEquipoResponse[] = [];
   loading = false;
   error: string | null = null;
-
   // Filtros y búsqueda
   filterForm: FormGroup;
   currentFilters: EquipoFilters = {};
+
+  // Opciones para el filtro de inspección
+  inspectionFilterOptions = [
+    { value: 'todos', label: 'Todos (Inspección)', description: 'Mostrar todos los equipos' },
+    { value: 'al-dia', label: 'Inspección al Día', description: 'Menos de 20 días desde la última inspección' },
+    { value: 'proxima', label: 'Inspección Próxima', description: 'Entre 20 y 30 días desde la última inspección' },
+    { value: 'vencida', label: 'Inspección Vencida', description: 'Más de 30 días o sin registro de inspección' },
+    { value: 'requiere-atencion', label: 'Requiere Atención', description: 'Incluye próximas a vencer y vencidas' }
+  ];
 
   // Paginación
   pagination = {
@@ -89,7 +97,8 @@ export class EquipoListComponent implements OnInit, OnDestroy {
   };  constructor() {
     this.filterForm = this.fb.group({
       search: [''],
-      estadoId: ['']
+      estadoId: [''],
+      estadoInspeccion: ['todos']
     });
 
     this.setupFilterSubscriptions();
@@ -240,7 +249,9 @@ export class EquipoListComponent implements OnInit, OnDestroy {
         debounceTime(300), // Reducir debounce para mejor respuesta
         distinctUntilChanged((prev, curr) => {
           // Comparación personalizada para evitar aplicar filtros innecesarios
-          return prev?.search === curr?.search && prev?.estadoId === curr?.estadoId;
+          return prev?.search === curr?.search && 
+                 prev?.estadoId === curr?.estadoId &&
+                 prev?.estadoInspeccion === curr?.estadoInspeccion;
         }),
         takeUntil(this.destroy$)
       )
@@ -330,8 +341,7 @@ export class EquipoListComponent implements OnInit, OnDestroy {
   }  /**
    * Aplica filtros desde los valores del formulario 
    * (usado por valueChanges subscription)
-   */
-  private applyFiltersFromFormValue(formValue: any): void {
+   */  private applyFiltersFromFormValue(formValue: any): void {
     const empresaId = this.empresaContextService.getCurrentEmpresaId();
 
     if (!empresaId) {
@@ -353,7 +363,8 @@ export class EquipoListComponent implements OnInit, OnDestroy {
     this.currentFilters = {
       empresaId,
       estadoId,
-      placa: formValue.search?.trim() || undefined
+      placa: formValue.search?.trim() || undefined,
+      estadoInspeccion: formValue.estadoInspeccion || 'todos'
     };
 
     // Debug en desarrollo
@@ -362,6 +373,7 @@ export class EquipoListComponent implements OnInit, OnDestroy {
         formValue: formValue,
         estadoIdOriginal: formValue.estadoId,
         estadoIdProcesado: estadoId,
+        estadoInspeccion: formValue.estadoInspeccion,
         filtrosFinales: this.currentFilters
       });
     }
@@ -380,14 +392,14 @@ export class EquipoListComponent implements OnInit, OnDestroy {
     this.applyFiltersFromFormValue(formValue);
   }  /**
    * Limpia todos los filtros
-   */
-  clearFilters(): void {
+   */  clearFilters(): void {
     const empresaId = this.empresaContextService.getCurrentEmpresaId();
 
     // Resetear formulario sin disparar valueChanges
     this.filterForm.setValue({
       search: '',
-      estadoId: ''
+      estadoId: '',
+      estadoInspeccion: 'todos'
     }, { emitEvent: false });
 
     // Limpiar filtros actuales manualmente
@@ -469,13 +481,14 @@ export class EquipoListComponent implements OnInit, OnDestroy {
     if (this.sortField !== field) return '';
     return this.sortDirection === 'asc' ? 'sort-asc' : 'sort-desc';
   }
-
   /**
    * Verifica si hay filtros activos
    */
   get hasActiveFilters(): boolean {
     const formValue = this.filterForm.value;
-    return !!(formValue.search?.trim() || (formValue.estadoId && formValue.estadoId !== '' && formValue.estadoId !== '0'));
+    return !!(formValue.search?.trim() || 
+             (formValue.estadoId && formValue.estadoId !== '' && formValue.estadoId !== '0') ||
+             (formValue.estadoInspeccion && formValue.estadoInspeccion !== 'todos'));
   }
 
   /**
@@ -487,6 +500,7 @@ export class EquipoListComponent implements OnInit, OnDestroy {
 
     if (formValue.search?.trim()) count++;
     if (formValue.estadoId && formValue.estadoId !== '' && formValue.estadoId !== '0') count++;
+    if (formValue.estadoInspeccion && formValue.estadoInspeccion !== 'todos') count++;
 
     return count;
   }
@@ -506,6 +520,13 @@ export class EquipoListComponent implements OnInit, OnDestroy {
       const estado = this.estadosEquipo.find(e => e.id === Number(formValue.estadoId));
       if (estado) {
         filters.push(`Estado: ${estado.nombre}`);
+      }
+    }
+
+    if (formValue.estadoInspeccion && formValue.estadoInspeccion !== 'todos') {
+      const inspectionFilter = this.inspectionFilterOptions.find(f => f.value === formValue.estadoInspeccion);
+      if (inspectionFilter) {
+        filters.push(`Inspección: ${inspectionFilter.label}`);
       }
     }
 
@@ -620,12 +641,12 @@ export class EquipoListComponent implements OnInit, OnDestroy {
     this.pagination.totalElements = 0;
     this.pagination.totalPages = 0;
     this.pagination.currentPage = 0;
-    
-    // Limpiar filtros aplicados para una refresh completa
+      // Limpiar filtros aplicados para una refresh completa
     this.filterForm.reset({
       tipoEquipoId: '',
       estadoId: '',
-      search: ''
+      search: '',
+      estadoInspeccion: 'todos'
     });
     
     // Pequeño delay para asegurar que la animación sea visible

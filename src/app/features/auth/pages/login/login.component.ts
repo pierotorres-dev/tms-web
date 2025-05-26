@@ -18,7 +18,7 @@ export class LoginComponent implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-  
+
   loginForm!: FormGroup;
   loading = false;
   submitted = false;
@@ -34,7 +34,7 @@ export class LoginComponent implements OnInit {
 
     // Obtener URL de retorno de los query params o usar default
     this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
-    
+
     // Limpiar cualquier mensaje de error previo
     this.error = '';
   }
@@ -53,18 +53,18 @@ export class LoginComponent implements OnInit {
 
     this.loading = true;
 
-    const loginRequest: LoginRequest = {      userName: this.f['userName'].value,
+    const loginRequest: LoginRequest = {
+      userName: this.f['userName'].value,
       password: this.f['password'].value
-    };    this.authService.login(loginRequest)
+    };
+      this.authService.login(loginRequest)
       .subscribe({
         next: (response: any) => {
-          // Verificar si el usuario tiene múltiples empresas o debe seleccionar una
+          // Verificar si el usuario tiene múltiples empresas para redireccionar a select-empresa
           if (response.empresas && response.empresas.length > 1) {
             this.router.navigate(['/auth/select-empresa']);
-          } else {
-            // Redirigir a la página solicitada o dashboard
-            this.router.navigate([this.returnUrl]);
           }
+          // Para otros casos (una empresa o sin empresas), la navegación se maneja en el servicio
         },
         error: (error: any) => {
           // Manejar diferentes tipos de errores
