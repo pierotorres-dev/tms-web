@@ -89,7 +89,6 @@ import { EmpresaInfo } from '../../../features/auth/models/auth.model';
                         </div>
                         <div class="flex-1 min-w-0">
                           <p class="text-sm font-medium text-gray-900 truncate">{{ selectedEmpresa.nombre }}</p>
-                          <p class="text-xs text-blue-600">ID: {{ selectedEmpresa.id }}</p>
                         </div>
                       </div>
                       <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">

@@ -60,14 +60,6 @@ interface BreadcrumbItem {
               </svg>
             </li>
           </ol>
-
-          <!-- Empresa ID Badge -->
-          <div class="flex items-center space-x-2" *ngIf="selectedEmpresa">
-            <span class="text-xs text-gray-500">ID Empresa:</span>
-            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-              {{ selectedEmpresa.id }}
-            </span>
-          </div>
         </div>
       </div>
     </nav>
