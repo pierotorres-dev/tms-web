@@ -1,7 +1,8 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';import { BreadcrumbsComponent } from './components/breadcrumbs/breadcrumbs.component';
+import { RouterModule } from '@angular/router';
+import { BreadcrumbsComponent } from './components/breadcrumbs/breadcrumbs.component';
 import { ToastContainerComponent } from './components/toast-container/toast-container.component';
 import { EmpresaIndicatorComponent } from './components/empresa-indicator/empresa-indicator.component';
 

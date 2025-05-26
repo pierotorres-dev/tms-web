@@ -12,7 +12,7 @@ import {
     EmpresaInfo,
     LoginRequest,
     LoginResponse,
-    RegisterRequest,    UserResponse,
+    RegisterRequest, UserResponse,
     UserSession
 } from '../models/auth.model';
 
@@ -149,7 +149,7 @@ export class AuthService {
      * Realiza la autenticación del usuario
      */
     login(credentials: LoginRequest): Observable<LoginResponse> {
-        this.loadingSubject.next(true);        return this.http.post<LoginResponse>(
+        this.loadingSubject.next(true); return this.http.post<LoginResponse>(
             AUTH_API.LOGIN,
             credentials,
             { showErrorNotification: false } // Manejamos los errores específicamente en el componente
@@ -168,7 +168,8 @@ export class AuthService {
                     // Guardamos las empresas disponibles para la selección
                     localStorage.setItem(TOKEN_STORAGE.EMPRESAS_LIST, JSON.stringify(response.empresas));
 
-                    this.notificationService.success(`Bienvenido, ${response.name}. Por favor seleccione una empresa.`);                } else if (response.empresas && response.empresas.length === 1) {
+                    this.notificationService.success(`Bienvenido, ${response.name}. Por favor seleccione una empresa.`);
+                } else if (response.empresas && response.empresas.length === 1) {
                     // Si solo tiene una empresa, generamos el token directamente
                     this.generateToken(response.userId, response.empresas[0].id, response.sessionToken)
                         .subscribe({
@@ -210,7 +211,7 @@ export class AuthService {
             userId,
             empresaId,
             sessionToken
-        });        return this.http.post<AuthResponse>(
+        }); return this.http.post<AuthResponse>(
             AUTH_API.GENERATE_TOKEN,
             null,
             {
@@ -243,7 +244,7 @@ export class AuthService {
 
                     // Eliminamos el token de sesión temporal y la lista de empresas
                     localStorage.removeItem(TOKEN_STORAGE.SESSION_TOKEN);
-                    localStorage.removeItem(TOKEN_STORAGE.EMPRESAS_LIST);
+                    //localStorage.removeItem(TOKEN_STORAGE.EMPRESAS_LIST);
 
                     // Redirigimos al dashboard
                     this.router.navigate(['/dashboard']);
@@ -269,7 +270,7 @@ export class AuthService {
 
         const headers = new HttpHeaders({
             'Authorization': `Bearer ${token}`
-        });        return this.http.post<AuthResponse>(
+        }); return this.http.post<AuthResponse>(
             AUTH_API.REFRESH_TOKEN,
             null,
             {
@@ -311,7 +312,7 @@ export class AuthService {
 
         const headers = new HttpHeaders({
             'Authorization': `Bearer ${token}`
-        });        return this.http.get<boolean>(
+        }); return this.http.get<boolean>(
             AUTH_API.VALIDATE_TOKEN,
             {
                 headers,
@@ -326,7 +327,7 @@ export class AuthService {
      * Registra un nuevo usuario
      */
     register(registerData: RegisterRequest): Observable<UserResponse> {
-        this.loadingSubject.next(true);        return this.http.post<UserResponse>(
+        this.loadingSubject.next(true); return this.http.post<UserResponse>(
             AUTH_API.REGISTER,
             registerData,
             { showErrorNotification: true }
@@ -389,7 +390,7 @@ export class AuthService {
             if (currentSession) {
                 const updatedSession = { ...currentSession, empresaId: empresa.id };
                 this.userSessionSubject.next(updatedSession);
-                
+
                 // Actualizar el localStorage con el empresaId
                 localStorage.setItem(TOKEN_STORAGE.USER_DATA, JSON.stringify({
                     userId: updatedSession.userId,

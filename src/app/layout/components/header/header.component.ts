@@ -5,11 +5,13 @@ import { AuthService } from '../../../features/auth/services/auth.service';
 import { EmpresaContextService } from '../../../core/services/empresa-context.service';
 import { ClickOutsideDirective } from '../../../shared/directives/click-outside.directive';
 import { EmpresaInfo } from '../../../features/auth/models/auth.model';
+import { EmpresaSelectorModalComponent } from '../../../shared/components/empresa-selector-modal/empresa-selector-modal.component';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, RouterModule, ClickOutsideDirective],  template: `
+  imports: [CommonModule, RouterModule, ClickOutsideDirective, EmpresaSelectorModalComponent],
+  template: `
     <header class="bg-white shadow-md">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
@@ -130,11 +132,18 @@ import { EmpresaInfo } from '../../../features/auth/models/auth.model';
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </div>          </div>
         </div>
       </div>
     </header>
+
+    <!-- Empresa Selector Modal -->
+    <app-empresa-selector-modal
+      *ngIf="isEmpresaSelectorOpen"
+      [isOpen]="isEmpresaSelectorOpen"
+      (closeModalEvent)="closeEmpresaSelector()"
+      (empresaChanged)="onEmpresaChanged($event)">
+    </app-empresa-selector-modal>
   `,
   styles: [`
     :host {
@@ -154,10 +163,10 @@ export class HeaderComponent implements OnInit {
   private router = inject(Router);
 
   @Output() sidebarToggle = new EventEmitter<void>();
-
   userName = '';
   userRole = '';
   isUserMenuOpen = false;
+  isEmpresaSelectorOpen = false;
   selectedEmpresa: EmpresaInfo | null = null;
   hasMultipleEmpresas = false;
 
@@ -216,13 +225,28 @@ export class HeaderComponent implements OnInit {
       .join('')
       .toUpperCase();
   }
-
   /**
-   * Open empresa selector modal or navigate to select empresa page
+   * Open empresa selector modal
    */
   openEmpresaSelector(): void {
     this.isUserMenuOpen = false;
-    this.router.navigate(['/auth/select-empresa']);
+    this.isEmpresaSelectorOpen = true;
+  }
+
+  /**
+   * Close empresa selector modal
+   */
+  closeEmpresaSelector(): void {
+    this.isEmpresaSelectorOpen = false;
+  }
+
+  /**
+   * Handle empresa change event from modal
+   */
+  onEmpresaChanged(empresa: EmpresaInfo): void {
+    // La actualización ya se maneja en el modal
+    // Aquí podríamos agregar lógica adicional si fuera necesario
+    console.log('Empresa changed to:', empresa.nombre);
   }
 
   toggleSidebar(): void {
