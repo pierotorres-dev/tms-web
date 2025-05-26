@@ -34,51 +34,115 @@ export class AuthService {
 
     // BehaviorSubject para el estado de carga durante operaciones de autenticación
     private loadingSubject = new BehaviorSubject<boolean>(false);
-    loading$ = this.loadingSubject.asObservable();
-
-    // BehaviorSubject para la empresa actualmente seleccionada
+    loading$ = this.loadingSubject.asObservable();    // BehaviorSubject para la empresa actualmente seleccionada
     private selectedEmpresaSubject = new BehaviorSubject<EmpresaInfo | null>(null);
     selectedEmpresa$ = this.selectedEmpresaSubject.asObservable();
+
+    // BehaviorSubject para el estado de inicialización
+    private initializationSubject = new BehaviorSubject<boolean>(false);
+    isInitialized$ = this.initializationSubject.asObservable();
 
     // Observable para obtener el empresaId de forma reactiva
     empresaId$ = this.selectedEmpresa$.pipe(
         map(empresa => empresa?.id || null)
-    );
-
-    /**
+    );/**
      * Al inicializar el servicio, intentamos recuperar la sesión del usuario
      * desde el localStorage si existe
      */
     constructor() {
         if (isPlatformBrowser(this.platformId)) { // Check if in browser
-            this.checkStoredSession();
+            // this.checkStoredSession(); // We'll call this via APP_INITIALIZER
         }
     }    /**
+     * Comprueba si existe una sesión guardada en el localStorage.
+     * This method will be called by the APP_INITIALIZER.
+     */
+    public performInitialSessionCheck(): Promise<void> {
+        return new Promise((resolve) => {
+            if (isPlatformBrowser(this.platformId)) {
+                this.checkStoredSession().then(() => {
+                    // Marcar como inicializado después de verificar la sesión
+                    this.initializationSubject.next(true);
+                    resolve();
+                });
+            } else {
+                // Si no estamos en el browser, simplemente marcar como inicializado
+                this.initializationSubject.next(true);
+                resolve();
+            }
+        });
+    }
+
+    /**
      * Comprueba si existe una sesión guardada en el localStorage
      */
-    private checkStoredSession(): void {
-        if (isPlatformBrowser(this.platformId)) { // Check if in browser
+    private checkStoredSession(): Promise<void> {
+        return new Promise((resolve) => {
+            if (!isPlatformBrowser(this.platformId)) {
+                resolve();
+                return;
+            }
+
             const storedUser = localStorage.getItem(TOKEN_STORAGE.USER_DATA);
             const storedToken = localStorage.getItem(TOKEN_STORAGE.AUTH_TOKEN);
             const storedEmpresa = localStorage.getItem(TOKEN_STORAGE.SELECTED_EMPRESA);
 
             if (storedUser && storedToken) {
                 try {
-                    const userSession: UserSession = JSON.parse(storedUser);
-                    userSession.token = storedToken;
-                    this.userSessionSubject.next(userSession);
+                    // Validar el token antes de restaurar la sesión
+                    this.validateStoredToken(storedToken).subscribe({
+                        next: (isValid) => {
+                            if (isValid) {
+                                // El token es válido, restaurar la sesión
+                                const userSession: UserSession = JSON.parse(storedUser);
+                                userSession.token = storedToken;
+                                this.userSessionSubject.next(userSession);
 
-                    // También restaurar la empresa seleccionada si existe
-                    if (storedEmpresa) {
-                        const empresaInfo: EmpresaInfo = JSON.parse(storedEmpresa);
-                        this.selectedEmpresaSubject.next(empresaInfo);
-                    }
+                                // También restaurar la empresa seleccionada si existe
+                                if (storedEmpresa) {
+                                    const empresaInfo: EmpresaInfo = JSON.parse(storedEmpresa);
+                                    this.selectedEmpresaSubject.next(empresaInfo);
+                                }
+                            } else {
+                                // El token no es válido, limpiar la sesión
+                                this.clearSession();
+                            }
+                            resolve();
+                        },
+                        error: () => {
+                            // Error al validar, limpiar la sesión
+                            this.clearSession();
+                            resolve();
+                        }
+                    });
                 } catch (error) {
                     // Si hay un error al parsear los datos, limpiamos el localStorage
                     this.clearSession();
+                    resolve();
                 }
+            } else {
+                resolve();
             }
-        }
+        });
+    }
+
+    /**
+     * Valida un token almacenado sin mostrar notificaciones de error
+     */
+    private validateStoredToken(token: string): Observable<boolean> {
+        const headers = new HttpHeaders({
+            'Authorization': `Bearer ${token}`
+        });
+
+        return this.http.get<boolean>(
+            AUTH_API.VALIDATE_TOKEN,
+            {
+                headers,
+                showErrorNotification: false
+            }
+        ).pipe(
+            catchError(() => of(false))
+        );
     }
 
     /**
@@ -438,5 +502,6 @@ export class AuthService {
             localStorage.removeItem(TOKEN_STORAGE.EMPRESAS_LIST);
         }
         this.userSessionSubject.next(null);
+        this.selectedEmpresaSubject.next(null);
     }
 }
