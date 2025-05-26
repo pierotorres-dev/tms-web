@@ -8,6 +8,7 @@ import {
   EquipoFilters
 } from '../models/fleet.dto';
 import { FleetServiceOptions } from '../models/fleet.model';
+import { InspectionStatusService } from '../utils/inspection-status.service';
 
 /**
  * Servicio especializado para operaciones avanzadas con equipos
@@ -18,6 +19,7 @@ import { FleetServiceOptions } from '../models/fleet.model';
 })
 export class EquiposService {
   private readonly fleetService = inject(FleetService);
+  private readonly inspectionStatusService = inject(InspectionStatusService);
 
   // Estado local para filtros
   private readonly _filtrosActivos$ = new BehaviorSubject<EquipoFilters>({});
@@ -238,12 +240,45 @@ export class EquiposService {
         if (!equipo.equipo || !equipo.equipo.toUpperCase().includes(filtros.equipo.trim().toUpperCase())) {
           return false;
         }
-      }
-
-      // Filtro específico por negocio
+      }      // Filtro específico por negocio
       if (filtros.negocio && filtros.negocio.trim().length > 0) {
         if (!equipo.negocio || !equipo.negocio.toUpperCase().includes(filtros.negocio.trim().toUpperCase())) {
           return false;
+        }
+      }
+
+      // Filtro por estado de inspección
+      if (filtros.estadoInspeccion && filtros.estadoInspeccion !== 'todos') {
+        const inspectionResult = this.inspectionStatusService.calculateInspectionStatus(equipo.fechaInspeccion);
+        
+        switch (filtros.estadoInspeccion) {
+          case 'al-dia':
+            // Verde: menos de 20 días
+            if (inspectionResult.status !== 'good') {
+              return false;
+            }
+            break;
+            
+          case 'proxima':
+            // Amarillo/Naranja: entre 20-30 días
+            if (inspectionResult.status !== 'warning') {
+              return false;
+            }
+            break;
+            
+          case 'vencida':
+            // Rojo: más de 30 días o null/blank
+            if (inspectionResult.status !== 'critical') {
+              return false;
+            }
+            break;
+            
+          case 'requiere-atencion':
+            // Combina "Próxima" y "Vencida": 20+ días o null/blank
+            if (inspectionResult.status === 'good') {
+              return false;
+            }
+            break;
         }
       }
 

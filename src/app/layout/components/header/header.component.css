@@ -1,0 +1,39 @@
+:host {
+    display: block;
+    z-index: 20;
+    position: relative;
+}
+
+.clickOutside {
+    display: none;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+    .user-info-mobile {
+        font-size: 0.75rem;
+        line-height: 1rem;
+    }
+    
+    /* Ensure dropdown is properly positioned on mobile */
+    .dropdown-menu {
+        width: 280px;
+        right: 0;
+        left: auto;
+    }
+    
+    /* Adjust header height on mobile for better spacing */
+    .header-content {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+/* Avatar animation */
+.avatar-button {
+    transition: all 0.2s ease-in-out;
+}
+
+.avatar-button:hover {
+    transform: scale(1.05);
+}

@@ -109,6 +109,11 @@ export interface ErrorResponse {
 // ==================== TIPOS DE UNIÓN Y FILTROS ====================
 
 /**
+ * Tipos de filtro por estado de inspección
+ */
+export type InspectionFilterType = 'todos' | 'al-dia' | 'proxima' | 'vencida' | 'requiere-atencion';
+
+/**
  * Parámetros para filtrar equipos
  */
 export interface EquipoFilters {
@@ -116,7 +121,8 @@ export interface EquipoFilters {
   estadoId?: number;
   placa?: string;
   equipo?: string;
-  negocio?: string
+  negocio?: string;
+  estadoInspeccion?: InspectionFilterType;
 }
 
 /**

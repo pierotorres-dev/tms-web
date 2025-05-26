@@ -1,32 +1,28 @@
 <!-- Encabezado de página -->
 <div class="mb-8">
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">    <div>
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+    <div>
       <h1 class="text-2xl font-bold text-gray-900 sm:text-3xl">Gestión de Equipos</h1>
       <p class="mt-2 text-sm text-gray-700">
         Administre y monitoree todos los equipos de la empresa
       </p>
-    </div>      <!-- Botón de nuevo equipo -->
-    <div class="mt-4 sm:mt-0 flex space-x-3">      <!-- Botón de refresh -->
-      <app-tms-button 
-        variant="secondary" 
-        size="lg"
-        [disabled]="isLoading"
-        (buttonClick)="refreshData()"
+    </div> <!-- Botón de nuevo equipo -->
+    <div class="mt-4 sm:mt-0 flex space-x-3"> <!-- Botón de refresh -->
+      <app-tms-button variant="secondary" size="lg" [disabled]="isLoading" (buttonClick)="refreshData()"
         [title]="'Actualizar lista de equipos'">
-        <svg class="mr-2 h-5 w-5" [class.animate-spin]="isLoading" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        <svg class="mr-2 h-5 w-5" [class.animate-spin]="isLoading" xmlns="http://www.w3.org/2000/svg" fill="none"
+          viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
         </svg>
         <span class="hidden sm:inline">Actualizar</span>
       </app-tms-button>
 
       <!-- Botón de nuevo equipo -->
-      <app-tms-button 
-        variant="primary" 
-        size="lg"
-        [disabled]="!empresaId"
-        (buttonClick)="onNuevoEquipo()"
+      <app-tms-button variant="primary" size="lg" [disabled]="!empresaId" (buttonClick)="onNuevoEquipo()"
         class="w-full sm:w-auto">
-        <svg class="mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg class="mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
         Registrar Nuevo Equipo
@@ -35,25 +31,86 @@
   </div>
 </div>
 
+<!-- Panel de resumen de inspecciones (opcional con capacidad de cierre) -->
+<div *ngIf="shouldShowInspectionPanel"
+  class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 transition-all duration-300 ease-in-out">
+  <div class="flex items-start justify-between">
+    <!-- Contenido principal del panel -->
+    <div class="flex">
+      <div class="flex-shrink-0">
+        <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd"
+            d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+            clip-rule="evenodd" />
+        </svg>
+      </div>
+      <div class="ml-3">
+        <h3 class="text-sm font-medium text-red-800">
+          Atención: Equipos con inspecciones vencidas
+        </h3>
+        <div class="mt-2 text-sm text-red-700">
+          <p>
+            {{ inspectionStatusCounts.critical }} equipo(s) tienen inspecciones vencidas o sin registrar.
+          </p>
+          <br>
+          <p>
+            {{ inspectionStatusCounts.warning }} equipo(s) próximos a vencer.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botón de cerrar -->
+    <div class="flex-shrink-0 ml-4">
+      <button type="button" (click)="dismissInspectionPanel()"
+        class="bg-red-50 rounded-md p-1.5 text-red-400 hover:text-red-500 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-red-50 transition-colors duration-200"
+        title="Cerrar panel de inspecciones">
+        <span class="sr-only">Cerrar panel</span>
+        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Panel alternativo: Botón para restaurar el panel cuando hay inspecciones críticas pero está cerrado -->
+<div *ngIf="hasCriticalInspections && !shouldShowInspectionPanel"
+  class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-6">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center">
+      <svg class="h-4 w-4 text-yellow-400 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+        stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z" />
+      </svg>
+      <span class="text-sm text-yellow-800">
+        Hay {{ inspectionStatusCounts.critical + inspectionStatusCounts.warning }} equipos que requieren atención
+      </span>
+    </div>
+    <button type="button" (click)="showInspectionPanel()"
+      class="text-sm text-yellow-700 hover:text-yellow-800 font-medium underline focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2">
+      Mostrar detalles
+    </button>
+  </div>
+</div>
+
 <!-- Panel de filtros -->
-<div class="bg-white shadow-card rounded-lg p-6 mb-6">
-  <form [formGroup]="filterForm" class="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-10 lg:gap-4">
-      <!-- Búsqueda general -->
-    <div class="lg:col-span-5">
+<div class="bg-white shadow-card rounded-lg p-6 mb-6">  <form [formGroup]="filterForm" class="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-12 lg:gap-4">
+    <!-- Búsqueda general -->
+    <div class="lg:col-span-4">
       <label for="search" class="block text-sm font-medium text-gray-700 mb-2">
         Buscar equipos
       </label>
       <div class="relative">
         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
-        <input
-          id="search"
-          formControlName="search"
-          type="text"
-          placeholder="Buscar por placa, equipo o negocio..."
+        <input id="search" formControlName="search" type="text" placeholder="Buscar por placa, equipo o negocio..."
           class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors duration-200">
       </div>
     </div>
@@ -63,38 +120,41 @@
       <label for="estadoId" class="block text-sm font-medium text-gray-700 mb-2">
         Estado
       </label>
-      <select
-        id="estadoId"
-        formControlName="estadoId"
+      <select id="estadoId" formControlName="estadoId"
         class="block w-full py-2.5 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors duration-200">
         <option value="">Todos los estados</option>
         <option *ngFor="let estado of estadosEquipo" [value]="estado.id">
           {{ estado.nombre }}
         </option>
       </select>
-    </div>    <!-- Botones de acción -->
+    </div>
+
+    <!-- Filtro por estado de inspección -->
+    <div class="lg:col-span-3">
+      <label for="estadoInspeccion" class="block text-sm font-medium text-gray-700 mb-2">
+        Inspección
+      </label>
+      <select id="estadoInspeccion" formControlName="estadoInspeccion"
+        class="block w-full py-2.5 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm transition-colors duration-200"
+        title="Filtrar equipos por estado de inspección">
+        <option *ngFor="let option of inspectionFilterOptions" [value]="option.value" [title]="option.description">
+          {{ option.label }}
+        </option>
+      </select>
+    </div>
+
+    <!-- Botones de acción -->
     <div class="lg:col-span-2 flex items-end justify-end space-x-2">
-      <!-- Indicador de filtros activos -->
-      <div *ngIf="hasActiveFilters" class="hidden lg:flex items-center text-sm text-blue-600 mr-2">
-        <svg class="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z" />
-        </svg>
-        {{ getActiveFiltersCount() }} filtro{{ getActiveFiltersCount() > 1 ? 's' : '' }}
-      </div>
-      
-      <app-tms-button
-        *ngIf="hasActiveFilters"
-        variant="outline"
-        size="md"
-        (buttonClick)="clearFilters()"
+      <app-tms-button *ngIf="hasActiveFilters" variant="outline" size="md" (buttonClick)="clearFilters()"
         class="w-full lg:w-auto">
-        <svg class="mr-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg class="mr-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>
         Limpiar
       </app-tms-button>
     </div>
-    
+
   </form>
 </div>
 
@@ -103,7 +163,9 @@
   <div class="flex">
     <div class="flex-shrink-0">
       <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+        <path fill-rule="evenodd"
+          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+          clip-rule="evenodd" />
       </svg>
     </div>
     <div class="ml-3">
@@ -122,32 +184,33 @@
 
 <!-- Tabla de equipos -->
 <div class="bg-white shadow-card rounded-lg overflow-hidden">
-  
+
   <!-- Header con información y controles -->
   <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">      <div class="flex items-center space-x-4">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-center space-x-4">
         <h3 class="text-lg font-medium text-gray-900">
           Lista de Equipos
         </h3>
         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
           {{ pagination.totalElements }} {{ pagination.totalElements === 1 ? 'equipo' : 'equipos' }}
         </span>
-        <span *ngIf="hasActiveFilters" 
-              class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"
-              [title]="getActiveFiltersDescription()">
+        <span *ngIf="hasActiveFilters"
+          class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"
+          [title]="getActiveFiltersDescription()">
           <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clip-rule="evenodd" />
+            <path fill-rule="evenodd"
+              d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z"
+              clip-rule="evenodd" />
           </svg>
           {{ getActiveFiltersCount() }} filtro{{ getActiveFiltersCount() > 1 ? 's' : '' }}
         </span>
       </div>
-      
+
       <!-- Control de tamaño de página -->
       <div class="mt-4 sm:mt-0 flex items-center space-x-2">
         <span class="text-sm text-gray-700">Mostrar:</span>
-        <select
-          [ngModel]="pagination.size"
-          (ngModelChange)="onPageSizeChange($event)"
+        <select [ngModel]="pagination.size" (ngModelChange)="onPageSizeChange($event)"
           class="form-select text-sm border-gray-300 rounded-md">
           <option *ngFor="let size of pagination.pageSizes" [value]="size">
             {{ size }}
@@ -161,78 +224,83 @@
   <!-- Tabla responsive -->
   <div class="overflow-x-auto">
     <table class="min-w-full divide-y divide-gray-200">
-      
+
       <!-- Encabezados -->
       <thead class="bg-gray-50">
         <tr>
-          <th 
-            scope="col" 
+          <th scope="col"
             class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-200"
             (click)="onSort('placa')">
             <div class="flex items-center space-x-1">
               <span>Placa</span>
-              <svg class="h-4 w-4 sort-icon" [ngClass]="getSortClass('placa')" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+              <svg class="h-4 w-4 sort-icon" [ngClass]="getSortClass('placa')" xmlns="http://www.w3.org/2000/svg"
+                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
               </svg>
             </div>
           </th>
-          
-          <th 
-            scope="col" 
+
+          <th scope="col"
             class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-200"
             (click)="onSort('negocio')">
             <div class="flex items-center space-x-1">
               <span>Negocio</span>
-              <svg class="h-4 w-4 sort-icon" [ngClass]="getSortClass('negocio')" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+              <svg class="h-4 w-4 sort-icon" [ngClass]="getSortClass('negocio')" xmlns="http://www.w3.org/2000/svg"
+                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
               </svg>
             </div>
           </th>
-          
-          <th 
-            scope="col" 
+
+          <th scope="col"
             class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-200"
             (click)="onSort('equipo')">
             <div class="flex items-center space-x-1">
               <span>Equipo</span>
-              <svg class="h-4 w-4 sort-icon" [ngClass]="getSortClass('equipo')" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+              <svg class="h-4 w-4 sort-icon" [ngClass]="getSortClass('equipo')" xmlns="http://www.w3.org/2000/svg"
+                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
               </svg>
             </div>
           </th>
-          
-          <th 
-            scope="col" 
+
+          <th scope="col"
             class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-200"
             (click)="onSort('fechaInspeccion')">
             <div class="flex items-center space-x-1">
               <span>Fecha Inspección</span>
-              <svg class="h-4 w-4 sort-icon" [ngClass]="getSortClass('fechaInspeccion')" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+              <svg class="h-4 w-4 sort-icon" [ngClass]="getSortClass('fechaInspeccion')"
+                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
               </svg>
             </div>
           </th>
-          
-          <th 
-            scope="col" 
+
+          <th scope="col"
             class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-200"
             (click)="onSort('estado')">
             <div class="flex items-center space-x-1">
               <span>Estado</span>
-              <svg class="h-4 w-4 sort-icon" [ngClass]="getSortClass('estado')" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+              <svg class="h-4 w-4 sort-icon" [ngClass]="getSortClass('estado')" xmlns="http://www.w3.org/2000/svg"
+                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
               </svg>
             </div>
           </th>
-          
+
           <th scope="col" class="relative px-6 py-3">
             <span class="sr-only">Acciones</span>
           </th>
         </tr>
       </thead>
-      
+
       <!-- Contenido de la tabla -->
-      <tbody class="bg-white divide-y divide-gray-200">        <!-- Loading state con mensajes específicos -->
+      <tbody class="bg-white divide-y divide-gray-200"> <!-- Loading state con mensajes específicos -->
         <tr *ngIf="isLoading">
           <td colspan="7" class="px-6 py-12 text-center">
             <div class="flex flex-col items-center space-y-3">
@@ -247,44 +315,45 @@
             </div>
           </td>
         </tr>
-        
+
         <!-- No data state -->
         <tr *ngIf="!isLoading && equipos.length === 0">
           <td colspan="7" class="px-6 py-12 text-center">
             <div class="flex flex-col items-center space-y-3">
-              <svg class="h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <svg class="h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               <div class="space-y-1">
                 <p class="text-sm font-medium text-gray-900">
                   {{ hasActiveFilters ? 'No se encontraron equipos' : 'No hay equipos registrados' }}
                 </p>
                 <p class="text-sm text-gray-500">
-                  {{ hasActiveFilters ? 'Intente modificar los filtros de búsqueda' : 'Comience registrando el primer equipo' }}
+                  {{ hasActiveFilters ? 'Intente modificar los filtros de búsqueda' : 'Comience registrando el primer
+                  equipo' }}
                 </p>
               </div>
-              <app-tms-button
-                *ngIf="!hasActiveFilters"
-                variant="primary"
-                size="sm"
-                (buttonClick)="onNuevoEquipo()">
+              <app-tms-button *ngIf="!hasActiveFilters" variant="primary" size="sm" (buttonClick)="onNuevoEquipo()">
                 Registrar Primer Equipo
               </app-tms-button>
             </div>
           </td>
         </tr>
-        
+
         <!-- Filas de datos -->
-        <tr *ngFor="let equipo of equipos; trackBy: trackByEquipoId" 
-            class="hover:bg-gray-50 transition-colors duration-200">
-          
+        <tr *ngFor="let equipo of equipos; trackBy: trackByEquipoId"
+          class="hover:bg-gray-50 transition-colors duration-200">
+
           <!-- Placa -->
           <td class="px-6 py-4 whitespace-nowrap">
             <div class="flex items-center">
               <div class="flex-shrink-0 h-10 w-10">
                 <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                  <svg class="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <svg class="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
               </div>
@@ -293,52 +362,57 @@
               </div>
             </div>
           </td>
-          
+
           <!-- Negocio -->
           <td class="px-6 py-4 whitespace-nowrap">
             <div class="text-sm text-gray-900">
               {{ equipo.negocio || 'No especificado' }}
             </div>
           </td>
-          
+
           <!-- Equipo -->
           <td class="px-6 py-4 whitespace-nowrap">
             <div class="text-sm text-gray-900">
               {{ equipo.equipo || 'No especificado' }}
             </div>
           </td>
-          
           <!-- Fecha Inspección -->
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-            {{ equipo.fechaInspeccion | date:'dd/MM/yyyy' }}
-          </td>          <!-- Estado -->
+            <div class="flex items-center space-x-2">
+              <app-inspection-indicator [fechaInspeccion]="equipo.fechaInspeccion" size="sm" [showTooltip]="true"
+                [showIcon]="true">
+              </app-inspection-indicator>
+              <span>{{ equipo.fechaInspeccion | date:'dd/MM/yyyy' }}</span>
+            </div>
+          </td><!-- Estado -->
           <td class="px-6 py-4 whitespace-nowrap">
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                  [ngClass]="getEstadoClass(equipo.estadoEquipoResponse)"
-                  [title]="getEstadoDescription(equipo.estadoEquipoResponse)">
+              [ngClass]="getEstadoClass(equipo.estadoEquipoResponse)"
+              [title]="getEstadoDescription(equipo.estadoEquipoResponse)">
               {{ equipo.estadoEquipoResponse?.nombre || 'Sin estado' }}
             </span>
           </td>
-          
+
           <!-- Acciones -->
           <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
             <div class="flex items-center justify-end space-x-2">
-              <button
-                (click)="onVerDetalle(equipo)"
-                class="text-blue-600 hover:text-blue-900 transition-colors duration-200"
-                title="Ver detalle">
-                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              <button (click)="onVerDetalle(equipo)"
+                class="text-blue-600 hover:text-blue-900 transition-colors duration-200" title="Ver detalle">
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
               </button>
-              
-              <button
-                (click)="onEditarEquipo(equipo)"
-                class="text-indigo-600 hover:text-indigo-900 transition-colors duration-200"
-                title="Editar">
-                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+
+              <button (click)="onEditarEquipo(equipo)"
+                class="text-indigo-600 hover:text-indigo-900 transition-colors duration-200" title="Editar">
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
               </button>
             </div>
@@ -350,23 +424,20 @@
   <!-- Paginación -->
   <div *ngIf="!isLoading && equipos.length > 0" class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
     <div class="flex items-center justify-between">
-      
+
       <!-- Información de paginación -->
       <div class="flex-1 flex justify-between sm:hidden">
-        <button
-          [disabled]="pagination.currentPage === 0"
-          (click)="onPageChange(pagination.currentPage - 1)"
+        <button [disabled]="pagination.currentPage === 0" (click)="onPageChange(pagination.currentPage - 1)"
           class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
           Anterior
         </button>
-        <button
-          [disabled]="pagination.currentPage === pagination.totalPages - 1"
+        <button [disabled]="pagination.currentPage === pagination.totalPages - 1"
           (click)="onPageChange(pagination.currentPage + 1)"
           class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
           Siguiente
         </button>
       </div>
-      
+
       <!-- Desktop pagination -->
       <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
         <div>
@@ -374,45 +445,47 @@
             Mostrando
             <span class="font-medium">{{ (pagination.currentPage * pagination.size) + 1 }}</span>
             a
-            <span class="font-medium">{{ Math.min((pagination.currentPage + 1) * pagination.size, pagination.totalElements) }}</span>
+            <span class="font-medium">{{ Math.min((pagination.currentPage + 1) * pagination.size,
+              pagination.totalElements) }}</span>
             de
             <span class="font-medium">{{ pagination.totalElements }}</span>
             resultados
           </p>
         </div>
-        
+
         <div>
           <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-            
+
             <!-- Botón anterior -->
-            <button
-              [disabled]="pagination.currentPage === 0"
-              (click)="onPageChange(pagination.currentPage - 1)"
+            <button [disabled]="pagination.currentPage === 0" (click)="onPageChange(pagination.currentPage - 1)"
               class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
               <span class="sr-only">Anterior</span>
-              <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+              <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                aria-hidden="true">
+                <path fill-rule="evenodd"
+                  d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                  clip-rule="evenodd" />
               </svg>
             </button>
-            
+
             <!-- Números de página -->
-            <button
-              *ngFor="let page of paginationPages"
-              (click)="onPageChange(page)"
+            <button *ngFor="let page of paginationPages" (click)="onPageChange(page)"
               [class]="page === pagination.currentPage 
                 ? 'z-10 bg-blue-50 border-blue-500 text-blue-600 relative inline-flex items-center px-4 py-2 border text-sm font-medium'
                 : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium'">
               {{ page + 1 }}
             </button>
-            
+
             <!-- Botón siguiente -->
-            <button
-              [disabled]="pagination.currentPage === pagination.totalPages - 1"
+            <button [disabled]="pagination.currentPage === pagination.totalPages - 1"
               (click)="onPageChange(pagination.currentPage + 1)"
               class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
               <span class="sr-only">Siguiente</span>
-              <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+              <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                aria-hidden="true">
+                <path fill-rule="evenodd"
+                  d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                  clip-rule="evenodd" />
               </svg>
             </button>
           </nav>

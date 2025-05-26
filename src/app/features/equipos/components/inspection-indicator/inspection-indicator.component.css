@@ -1,0 +1,171 @@
+/* Contenedor del indicador de inspección */
+.inspection-indicator-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Círculo principal del indicador */
+.inspection-circle {
+  position: relative;
+  cursor: help;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+}
+
+.inspection-circle:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.30);
+}
+
+/* Punto interno para estados no críticos */
+.inspection-dot {
+  width: 40%;
+  height: 40%;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+}
+
+/* Icono para estado crítico */
+.inspection-icon {
+  width: 70%;
+  height: 70%;
+  color: white;
+}
+
+/* Tooltip personalizado */
+.inspection-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease-in-out;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.inspection-tooltip.show {
+  opacity: 1;
+  visibility: visible;
+  margin-bottom: 12px;
+}
+
+.tooltip-content {
+  background: #1f2937;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  max-width: 200px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.tooltip-content::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: #1f2937;
+}
+
+.tooltip-title {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.tooltip-message {
+  color: #e5e7eb;
+}
+
+.tooltip-days {
+  color: #9ca3af;
+  font-size: 0.7rem;
+  margin-top: 2px;
+}
+
+/* Variantes de color más específicas para mejor contraste */
+.inspection-circle.bg-red-500 {
+  background-color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.inspection-circle.bg-orange-500 {
+  background-color: #ffbb3d;
+  border-color: rgba(249, 115, 22, 0.3);
+}
+
+.inspection-circle.bg-green-500 {
+  background-color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+/* Animaciones suaves */
+@keyframes pulse-critical {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.inspection-circle.bg-red-500 {
+  animation: pulse-critical 2s infinite;
+}
+
+/* Estados hover mejorados */
+.inspection-circle:hover.bg-red-500 {
+  background-color: #dc2626;
+}
+
+.inspection-circle:hover.bg-orange-500 {
+  background-color: #ffa600;
+}
+
+.inspection-circle:hover.bg-green-500 {
+  background-color: #16a34a;
+}
+
+/* Accesibilidad - modo de alto contraste */
+@media (prefers-contrast: high) {
+  .inspection-circle {
+    border-width: 3px;
+    border-color: #000;
+  }
+  
+  .inspection-dot {
+    background-color: #fff;
+  }
+}
+
+/* Responsive - tamaños en dispositivos móviles */
+@media (max-width: 640px) {
+  .tooltip-content {
+    font-size: 0.7rem;
+    padding: 6px 10px;
+    max-width: 150px;
+  }
+}
+
+/* Estados de enfoque para accesibilidad */
+.inspection-circle:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Utilidades adicionales */
+.inspection-container.inline {
+  display: inline-flex;
+  margin-right: 0.5rem;
+}
+
+.inspection-container.block {
+  display: flex;
+  margin-bottom: 0.25rem;
+}

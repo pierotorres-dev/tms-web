@@ -43,16 +43,25 @@
   margin-bottom: 1.5rem;
 }
 
+/* Grid layout mejorado para filtros balanceados */
 .filters-grid {
   display: grid;
-  grid-template-columns: 5fr 3fr 2fr;
+  grid-template-columns: 4fr 3fr 3fr 2fr; /* Búsqueda: 33%, Estado: 25%, Inspección: 25%, Botones: 17% */
   gap: 1rem;
   align-items: end;
 }
 
+/* Responsive design mejorado */
+@media (max-width: 1024px) {
+  .filters-grid {
+    grid-template-columns: 1fr 1fr; /* 2 columnas en tablet */
+    gap: 1rem;
+  }
+}
+
 @media (max-width: 768px) {
   .filters-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr; /* 1 columna en móvil */
     gap: 1rem;
   }
 }
@@ -78,6 +87,7 @@
   font-size: 0.875rem;
   transition: all 0.2s ease;
   background: white;
+  min-height: 42px; /* Asegurar altura mínima consistente */
 }
 
 .form-input:focus,
@@ -87,6 +97,24 @@
   box-shadow: 0 0 0 3px rgba(20, 71, 230, 0.1);
 }
 
+/* Mejoras específicas para balance visual de filtros */
+.filter-field {
+  min-width: 0; /* Permite que los campos se encojan cuando sea necesario */
+}
+
+.filter-field label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.filter-field select,
+.filter-field input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Estilo específico para el campo de búsqueda */
 .search-input {
   position: relative;
 }
