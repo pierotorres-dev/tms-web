@@ -439,29 +439,6 @@ export class AuthService {
     }
 
     /**
-     * Valida si el token actual es válido
-     */
-    validateToken(): Observable<boolean> {
-        const token = localStorage.getItem(TOKEN_STORAGE.AUTH_TOKEN);
-
-        if (!token) {
-            return of(false);
-        }
-
-        const headers = new HttpHeaders({
-            'Authorization': `Bearer ${token}`
-        }); return this.http.get<boolean>(
-            AUTH_API.VALIDATE_TOKEN,
-            {
-                headers,
-                showErrorNotification: false // No mostrar notificaciones para validación de token
-            }
-        ).pipe(
-            catchError(() => of(false))
-        );
-    }
-
-    /**
      * Registra un nuevo usuario
      */
     register(registerData: RegisterRequest): Observable<UserResponse> {
