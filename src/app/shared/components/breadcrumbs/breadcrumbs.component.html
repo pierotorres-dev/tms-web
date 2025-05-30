@@ -1,0 +1,44 @@
+<nav class="bg-gray-50 border-b border-gray-200 px-4 py-3" aria-label="Breadcrumb">
+    <div class="max-w-7xl mx-auto">
+        <div class="flex items-center justify-between">
+            <!-- Breadcrumbs -->
+            <ol class="flex items-center space-x-2">
+                <!-- Empresa Context -->
+                <li class="flex items-center" *ngIf="selectedEmpresa">
+                    <div class="flex items-center space-x-2 px-3 py-1 bg-blue-100 rounded-full">
+                        <div
+                            class="w-5 h-5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-xs">
+                            {{ getEmpresaInitials(selectedEmpresa.nombre) }}
+                        </div>
+                        <span class="text-sm font-medium text-blue-800">{{ selectedEmpresa.nombre }}</span>
+                    </div>
+                    <svg class="ml-2 h-4 w-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd"
+                            d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                            clip-rule="evenodd" />
+                    </svg>
+                </li>
+
+                <!-- Navigation Breadcrumbs -->
+                <li *ngFor="let item of breadcrumbs; let last = last" class="flex items-center">
+                    <a *ngIf="!item.active && item.url; else staticItem" [routerLink]="item.url"
+                        class="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors duration-200">
+                        {{ item.label }}
+                    </a>
+                    <ng-template #staticItem>
+                        <span class="text-sm font-medium" [class.text-gray-900]="item.active"
+                            [class.text-gray-600]="!item.active">
+                            {{ item.label }}
+                        </span>
+                    </ng-template>
+
+                    <svg *ngIf="!last" class="ml-2 h-4 w-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd"
+                            d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                            clip-rule="evenodd" />
+                    </svg>
+                </li>
+            </ol>
+        </div>
+    </div>
+</nav>

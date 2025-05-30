@@ -14,7 +14,7 @@
                     <span class="text-xl font-bold text-blue-600">TMS</span>
                     <span class="text-sm ml-2 text-gray-600 hidden sm:block">Sistema de Gestión de Neumáticos</span>
                 </a>
-            </div>            <!-- Center section: Empresa Context Indicator (Desktop) -->
+            </div> <!-- Center section: Empresa Context Indicator (Desktop) -->
             <div class="hidden md:flex items-center space-x-4" *ngIf="selectedEmpresa">
                 <div class="flex items-center space-x-2 px-3 py-1 bg-blue-50 rounded-full border border-blue-200">
                     <div
@@ -24,7 +24,7 @@
                     <span class="text-sm font-medium text-blue-800 max-w-32 truncate">{{ selectedEmpresa.nombre
                         }}</span>
                 </div>
-                
+
                 <!-- Connection Status Indicator -->
                 <app-connection-status></app-connection-status>
             </div><!-- Right section: User info and actions -->
@@ -35,8 +35,11 @@
                     <div class="hidden md:flex flex-col items-end mr-3">
                         <span class="text-sm font-medium text-gray-700">{{ fullName || userName }}</span>
                         <span class="text-xs text-gray-500">{{ userRole }}</span>
-                    </div>                    <!-- Mobile: Compact user info with empresa context -->
+                    </div> <!-- Mobile: Compact user info with empresa context -->
                     <div class="flex md:hidden items-center space-x-2 mr-2">
+                        <!-- Mobile Connection Status -->
+                        <app-connection-status></app-connection-status>
+
                         <!-- Mobile user initials -->
                         <div class="flex items-center space-x-1">
                             <div class="flex flex-col">
@@ -45,9 +48,6 @@
                                 <span class="text-xs text-gray-500 leading-tight">{{ userRole }}</span>
                             </div>
                         </div>
-                        
-                        <!-- Mobile Connection Status -->
-                        <app-connection-status></app-connection-status>
                     </div>
                     <!-- User dropdown button -->
                     <div class="relative">

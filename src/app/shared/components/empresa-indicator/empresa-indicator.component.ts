@@ -7,51 +7,8 @@ import { EmpresaInfo } from '../../../features/auth/models/auth.model';
   selector: 'app-empresa-indicator',
   standalone: true,
   imports: [CommonModule],
-  template: `
-    <div 
-      *ngIf="selectedEmpresa && showIndicator"
-      class="empresa-indicator"
-      [ngClass]="{
-        'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium': size === 'sm',
-        'inline-flex items-center px-3 py-1 rounded-full text-sm font-medium': size === 'md',
-        'inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium': size === 'lg'
-      }"
-      [class]="getIndicatorClasses()">
-      
-      <!-- Company Avatar -->
-      <div 
-        class="rounded-full flex items-center justify-center text-white font-semibold bg-gradient-to-br from-blue-500 to-blue-600"
-        [ngClass]="{
-          'w-4 h-4 text-xs mr-1.5': size === 'sm',
-          'w-5 h-5 text-xs mr-2': size === 'md',
-          'w-6 h-6 text-sm mr-2': size === 'lg'
-        }">
-        {{ getEmpresaInitials(selectedEmpresa.nombre) }}
-      </div>
-      
-      <!-- Company Name -->
-      <span class="text-gray-800 truncate" [class.max-w-24]="size === 'sm'" [class.max-w-32]="size === 'md'">
-        {{ selectedEmpresa.nombre }}
-      </span>
-      
-      <!-- Company ID (optional) -->
-      <span 
-        *ngIf="showId && size !== 'sm'" 
-        class="ml-1 px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded text-xs">
-        {{ selectedEmpresa.id }}
-      </span>
-    </div>
-  `,
-  styles: [`
-    .empresa-indicator {
-      transition: all 0.2s ease-in-out;
-    }
-    
-    .empresa-indicator:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-  `]
+  templateUrl: './empresa-indicator.component.html',
+  styleUrl: './empresa-indicator.component.css'
 })
 export class EmpresaIndicatorComponent implements OnInit {
   private empresaContextService = inject(EmpresaContextService);

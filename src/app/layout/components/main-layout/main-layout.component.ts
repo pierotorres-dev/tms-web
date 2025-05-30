@@ -11,38 +11,8 @@ import { ToastContainerComponent } from '../../../shared/components/toast-contai
   selector: 'app-main-layout',
   standalone: true,
   imports: [CommonModule, RouterOutlet, HeaderComponent, SidebarComponent, FooterComponent, BreadcrumbsComponent, ToastContainerComponent],
-  template: `
-    <div class="flex h-screen bg-gray-100">
-      <!-- Sidebar -->
-      <app-sidebar [isOpen]="sidebarOpen"></app-sidebar>
-      
-      <!-- Main content -->
-      <div class="flex-1 flex flex-col overflow-hidden lg:pl-64">
-        <!-- Header -->
-        <app-header (sidebarToggle)="toggleSidebar()"></app-header>
-        
-        <!-- Breadcrumbs -->
-        <app-breadcrumbs></app-breadcrumbs>
-        
-        <!-- Page Content -->
-        <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          <router-outlet></router-outlet>
-        </main>
-        
-        <!-- Footer -->
-        <app-footer></app-footer>
-      </div>
-    </div>
-    
-    <!-- Toast Notifications -->
-    <app-toast-container></app-toast-container>
-  `,
-  styles: [`
-    :host {
-      display: block;
-      height: 100vh;
-    }
-  `]
+  templateUrl: './main-layout.component.html',
+  styleUrl: './main-layout.component.css'
 })
 export class MainLayoutComponent {
   sidebarOpen = false;
