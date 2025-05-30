@@ -5,18 +5,19 @@ import { RouterModule } from '@angular/router';
 import { BreadcrumbsComponent } from './components/breadcrumbs/breadcrumbs.component';
 import { ToastContainerComponent } from './components/toast-container/toast-container.component';
 import { EmpresaIndicatorComponent } from './components/empresa-indicator/empresa-indicator.component';
+import { ConnectionStatusComponent } from './components/connection-status/connection-status.component';
 
 @NgModule({
   declarations: [
     // Aquí irán componentes compartidos como botones personalizados, alertas, etc.
-  ],
-  imports: [
+  ],  imports: [
     CommonModule,
     ReactiveFormsModule,
     RouterModule,
     BreadcrumbsComponent,
     ToastContainerComponent,
-    EmpresaIndicatorComponent
+    EmpresaIndicatorComponent,
+    ConnectionStatusComponent
   ],
   exports: [
     // Exportamos módulos comunes que se usarán en múltiples features
@@ -25,7 +26,8 @@ import { EmpresaIndicatorComponent } from './components/empresa-indicator/empres
     RouterModule,
     BreadcrumbsComponent,
     ToastContainerComponent,
-    EmpresaIndicatorComponent
+    EmpresaIndicatorComponent,
+    ConnectionStatusComponent
     // Aquí también exportaremos los componentes declarados arriba
   ]
 })

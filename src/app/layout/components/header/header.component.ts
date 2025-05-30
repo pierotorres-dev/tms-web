@@ -6,11 +6,12 @@ import { EmpresaContextService } from '../../../core/services/empresa-context.se
 import { ClickOutsideDirective } from '../../../shared/directives/click-outside.directive';
 import { EmpresaInfo } from '../../../features/auth/models/auth.model';
 import { EmpresaSelectorModalComponent } from '../../../shared/components/empresa-selector-modal/empresa-selector-modal.component';
+import { ConnectionStatusComponent } from '../../../shared/components/connection-status/connection-status.component';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, RouterModule, ClickOutsideDirective, EmpresaSelectorModalComponent],
+  imports: [CommonModule, RouterModule, ClickOutsideDirective, EmpresaSelectorModalComponent, ConnectionStatusComponent],
   templateUrl: './header.component.html',
   styleUrl: './header.component.css'
 })

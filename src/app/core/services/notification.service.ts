@@ -63,8 +63,7 @@ export class NotificationService {
       duration: duration || this.defaultDuration
     });
   }
-  
-  /**
+    /**
    * Muestra una notificación informativa
    */
   info(message: string, duration?: number): void {
@@ -74,6 +73,34 @@ export class NotificationService {
       type: NotificationType.INFO,
       duration: duration || this.defaultDuration
     });
+  }
+
+  /**
+   * Notificación específica para renovación de token exitosa
+   */
+  tokenRefreshed(): void {
+    this.success('🔒 Sesión renovada automáticamente', 3000);
+  }
+
+  /**
+   * Notificación de advertencia sobre próxima expiración de sesión
+   */
+  sessionExpiringSoon(minutesRemaining: number): void {
+    this.warning(
+      `⏰ Su sesión expirará en ${minutesRemaining} minutos. Los datos se guardarán automáticamente.`,
+      8000
+    );
+  }
+
+  /**
+   * Notificación informativa sobre el estado de conectividad
+   */
+  connectionStatus(isOnline: boolean): void {
+    if (isOnline) {
+      this.success('🌐 Conexión restablecida', 3000);
+    } else {
+      this.warning('🔌 Sin conexión - Trabajando en modo offline', 0); // No auto-remove
+    }
   }
   
   /**

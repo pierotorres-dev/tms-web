@@ -2,11 +2,12 @@ import { HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject, PLATFORM_ID } from '@angular/core'; // Import PLATFORM_ID
 import { isPlatformBrowser } from '@angular/common'; // Import isPlatformBrowser
 import { Router } from '@angular/router';
-import { BehaviorSubject, Observable, catchError, map, of, tap, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, map, of, tap, throwError, delay, retry, timer, switchMap } from 'rxjs';
 
-import { AUTH_API, TOKEN_STORAGE } from '../constants/auth.constants';
+import { AUTH_API, TOKEN_STORAGE, SESSION_CONFIG } from '../constants/auth.constants';
 import { HttpService } from '../../../core/services/http.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { TokenManagerService } from '../../../core/services/token-manager.service';
 import {
     AuthResponse,
     EmpresaInfo,
@@ -26,6 +27,7 @@ export class AuthService {
     private http = inject(HttpService);
     private router = inject(Router);
     private notificationService = inject(NotificationService);
+    private tokenManager = inject(TokenManagerService);
     private platformId = inject(PLATFORM_ID); // Inject PLATFORM_ID
 
     // BehaviorSubject para manejar el estado de autenticación
@@ -34,7 +36,9 @@ export class AuthService {
 
     // BehaviorSubject para el estado de carga durante operaciones de autenticación
     private loadingSubject = new BehaviorSubject<boolean>(false);
-    loading$ = this.loadingSubject.asObservable();    // BehaviorSubject para la empresa actualmente seleccionada
+    loading$ = this.loadingSubject.asObservable();
+
+    // BehaviorSubject para la empresa actualmente seleccionada
     private selectedEmpresaSubject = new BehaviorSubject<EmpresaInfo | null>(null);
     selectedEmpresa$ = this.selectedEmpresaSubject.asObservable();
 
@@ -45,7 +49,17 @@ export class AuthService {
     // Observable para obtener el empresaId de forma reactiva
     empresaId$ = this.selectedEmpresa$.pipe(
         map(empresa => empresa?.id || null)
-    );/**
+    );
+
+    // Timer para refrescar tokens automáticamente
+    private refreshTimer?: ReturnType<typeof setInterval>;    // Flag para evitar múltiples llamadas simultáneas de refresh
+    private isRefreshing = false;
+
+    // Contador de intentos de reintento para refresh
+    private retryCount = 0;
+
+    // Flag para rastrear si ya se mostró la advertencia de sesión
+    private sessionWarningShown = false;/**
      * Al inicializar el servicio, intentamos recuperar la sesión del usuario
      * desde el localStorage si existe
      */
@@ -85,14 +99,18 @@ export class AuthService {
 
             const storedUser = localStorage.getItem(TOKEN_STORAGE.USER_DATA);
             const storedToken = localStorage.getItem(TOKEN_STORAGE.AUTH_TOKEN);
-            const storedEmpresa = localStorage.getItem(TOKEN_STORAGE.SELECTED_EMPRESA);
-
-            if (storedUser && storedToken) {
+            const storedEmpresa = localStorage.getItem(TOKEN_STORAGE.SELECTED_EMPRESA);            if (storedUser && storedToken) {
                 try {
+                    // Verificar si la sesión de 24 horas ha expirado
+                    if (this.isSessionExpired()) {
+                        this.clearSession();
+                        resolve();
+                        return;
+                    }
+
                     // Validar el token antes de restaurar la sesión
                     this.validateStoredToken(storedToken).subscribe({
-                        next: (isValid) => {
-                            if (isValid) {
+                        next: (isValid) => {                            if (isValid) {
                                 // El token es válido, restaurar la sesión
                                 const userSession: UserSession = JSON.parse(storedUser);
                                 userSession.token = storedToken;
@@ -103,6 +121,12 @@ export class AuthService {
                                     const empresaInfo: EmpresaInfo = JSON.parse(storedEmpresa);
                                     this.selectedEmpresaSubject.next(empresaInfo);
                                 }
+
+                                // Actualizar estado del TokenManager
+                                this.updateTokenManagerStatus();
+
+                                // Iniciar el timer de renovación automática de tokens
+                                this.startTokenRefreshTimer();
                             } else {
                                 // El token no es válido, limpiar la sesión
                                 this.clearSession();
@@ -366,9 +390,7 @@ export class AuthService {
             }),
             tap(() => this.loadingSubject.next(false))
         );
-    }
-
-    /**
+    }    /**
      * Refresca el token actual
      */
     refreshToken(): Observable<AuthResponse> {
@@ -380,7 +402,7 @@ export class AuthService {
 
         const headers = new HttpHeaders({
             'Authorization': `Bearer ${token}`
-        }); return this.http.post<AuthResponse>(
+        });        return this.http.post<AuthResponse>(
             AUTH_API.REFRESH_TOKEN,
             null,
             {
@@ -390,6 +412,12 @@ export class AuthService {
         ).pipe(
             tap(response => {
                 localStorage.setItem(TOKEN_STORAGE.AUTH_TOKEN, response.token);
+                
+                // Actualizar el timestamp de expiración del nuevo token
+                this.setTokenExpiry();
+
+                // Actualizar estado del TokenManager
+                this.updateTokenManagerStatus();
 
                 // Actualizamos el token en el subject
                 const currentSession = this.userSessionSubject.value;
@@ -451,9 +479,7 @@ export class AuthService {
             }),
             tap(() => this.loadingSubject.next(false))
         );
-    }
-
-    /**
+    }    /**
      * Establece la información de sesión del usuario
      */
     private setUserSession(session: UserSession): void {
@@ -469,9 +495,200 @@ export class AuthService {
                 empresaId: session.empresaId
             }));
 
+            // Establecer el timestamp de login
+            this.setLoginTimestamp();
+
+            // Establecer el expiry del token
+            this.setTokenExpiry();
+
+            // Actualizar estado del TokenManager
+            this.updateTokenManagerStatus();
+
             // Actualizamos el BehaviorSubject
             this.userSessionSubject.next(session);
+
+            // Iniciar el timer de refresco de tokens
+            this.startTokenRefreshTimer();
         }
+    }
+
+    /**
+     * Establece el timestamp de login inicial
+     */
+    private setLoginTimestamp(): void {
+        if (isPlatformBrowser(this.platformId)) {
+            const now = Date.now();
+            localStorage.setItem(TOKEN_STORAGE.LOGIN_TIMESTAMP, now.toString());
+        }
+    }    /**
+     * Establece el timestamp de expiración del token
+     */
+    private setTokenExpiry(): void {
+        if (isPlatformBrowser(this.platformId)) {
+            const expiry = Date.now() + SESSION_CONFIG.TOKEN_LIFETIME;
+            localStorage.setItem(TOKEN_STORAGE.TOKEN_EXPIRY, expiry.toString());
+        }
+    }
+
+    /**
+     * Actualiza el estado del TokenManager con información actual
+     */
+    private updateTokenManagerStatus(): void {
+        if (!isPlatformBrowser(this.platformId)) return;
+
+        const loginTimestamp = localStorage.getItem(TOKEN_STORAGE.LOGIN_TIMESTAMP);
+        const tokenExpiry = localStorage.getItem(TOKEN_STORAGE.TOKEN_EXPIRY);
+        
+        if (loginTimestamp) {
+            const sessionAge = Date.now() - parseInt(loginTimestamp);
+            const sessionTimeRemaining = Math.max(0, SESSION_CONFIG.SESSION_LIFETIME - sessionAge);
+            this.tokenManager.updateSessionTimeRemaining(sessionTimeRemaining);
+        }
+
+        if (tokenExpiry) {
+            const nextRefreshTime = new Date(parseInt(tokenExpiry) - SESSION_CONFIG.REFRESH_THRESHOLD);
+            this.tokenManager.setNextRefresh(nextRefreshTime);
+        }
+    }
+
+    /**
+     * Verifica si la sesión de 24 horas ha expirado
+     */
+    private isSessionExpired(): boolean {
+        if (!isPlatformBrowser(this.platformId)) return false;
+        
+        const loginTimestamp = localStorage.getItem(TOKEN_STORAGE.LOGIN_TIMESTAMP);
+        if (!loginTimestamp) return true;
+        
+        const sessionAge = Date.now() - parseInt(loginTimestamp);
+        return sessionAge > SESSION_CONFIG.SESSION_LIFETIME;
+    }
+
+    /**
+     * Verifica si el token está próximo a expirar
+     */
+    private shouldRefreshToken(): boolean {
+        if (!isPlatformBrowser(this.platformId)) return false;
+        
+        const tokenExpiry = localStorage.getItem(TOKEN_STORAGE.TOKEN_EXPIRY);
+        if (!tokenExpiry) return true;
+        
+        const timeUntilExpiry = parseInt(tokenExpiry) - Date.now();
+        return timeUntilExpiry <= SESSION_CONFIG.REFRESH_THRESHOLD;
+    }    /**
+     * Inicia el timer automático para refrescar tokens
+     */    private startTokenRefreshTimer(): void {
+        if (this.refreshTimer) {
+            clearInterval(this.refreshTimer);
+        }
+
+        // Actualizar estado inicial del TokenManager
+        this.updateTokenManagerStatus();
+
+        this.refreshTimer = setInterval(() => {
+            if (this.isSessionExpired()) {
+                this.handleSessionExpired();
+                return;
+            }
+
+            // Actualizar el estado del TokenManager periódicamente
+            this.updateTokenManagerStatus();            // Verificar alertas de sesión con diferentes umbrales
+            const currentStatus = this.tokenManager.getCurrentStatus();
+            const sessionTimeRemaining = currentStatus.sessionTimeRemaining;
+            
+            // Sistema de alertas escalonadas
+            this.checkSessionWarnings(sessionTimeRemaining);
+
+            if (this.shouldRefreshToken() && !this.isRefreshing) {
+                this.performTokenRefresh();
+            }
+        }, SESSION_CONFIG.REFRESH_INTERVAL);
+    }
+
+    /**
+     * Detiene el timer de refresco de tokens
+     */
+    private stopTokenRefreshTimer(): void {
+        if (this.refreshTimer) {
+            clearInterval(this.refreshTimer);
+            this.refreshTimer = undefined;
+        }
+    }
+
+    /**
+     * Maneja la expiración de la sesión de 24 horas
+     */
+    private handleSessionExpired(): void {
+        this.notificationService.info('Su sesión ha expirado. Por favor, inicie sesión nuevamente.');
+        this.logout();
+    }    /**
+     * Realiza el refresh del token de forma controlada con retry logic
+     */
+    private performTokenRefresh(): void {
+        if (this.isRefreshing) return;
+        
+        this.isRefreshing = true;
+        this.tokenManager.setRefreshing(true);
+        
+        this.refreshTokenWithRetry().subscribe({
+            next: (response: AuthResponse) => {
+                if (response.token) {
+                    this.setTokenExpiry();
+                    this.updateTokenManagerStatus();
+                    this.retryCount = 0; // Reset retry count on success
+                    console.log('Token renovado automáticamente');
+                    
+                    // Notificación proactiva de renovación exitosa
+                    this.notificationService.tokenRefreshed();
+                }
+                this.isRefreshing = false;
+                this.tokenManager.setRefreshing(false);
+            },
+            error: (error: any) => {
+                console.error('Error al renovar token automáticamente:', error);
+                this.isRefreshing = false;
+                this.tokenManager.setRefreshing(false);
+                this.retryCount = 0; // Reset retry count
+                
+                // Notificación de error en renovación
+                this.notificationService.error('Error al renovar sesión automáticamente');
+                
+                if (error.status === 401) {
+                    this.handleSessionExpired();
+                }
+            }
+        });
+    }
+
+    /**
+     * Refresca el token con lógica de reintento
+     */
+    private refreshTokenWithRetry(): Observable<AuthResponse> {
+        return this.refreshToken().pipe(
+            catchError((error) => {
+                if (this.retryCount < SESSION_CONFIG.RETRY_ATTEMPTS && this.shouldRetry(error)) {
+                    this.retryCount++;
+                    console.log(`Reintentando refresh token (${this.retryCount}/${SESSION_CONFIG.RETRY_ATTEMPTS})`);
+                    
+                    return timer(SESSION_CONFIG.RETRY_DELAY).pipe(
+                        tap(() => this.notificationService.info(`Reintentando conectar... (${this.retryCount}/${SESSION_CONFIG.RETRY_ATTEMPTS})`)),
+                        switchMap(() => this.refreshTokenWithRetry())
+                    );
+                }
+                return throwError(() => error);
+            })
+        );
+    }
+
+    /**
+     * Determina si un error es recuperable para reintento
+     */
+    private shouldRetry(error: any): boolean {
+        // Reintentar solo en casos de problemas de red o errores temporales del servidor
+        return error.status === 0 || // Error de red
+               error.status === 408 || // Request Timeout
+               error.status === 429 || // Too Many Requests
+               (error.status >= 500 && error.status < 600); // Server errors
     }
 
     /**
@@ -591,17 +808,19 @@ export class AuthService {
             }
         }
         return [];
-    }
-
-    /**
+    }    /**
      * Cierra la sesión del usuario
      */
     logout(): void {
         if (isPlatformBrowser(this.platformId)) { // Check if in browser
             this.clearSession();
         }
+        // Detener el timer de renovación
+        this.stopTokenRefreshTimer();
+        // Resetear el estado del TokenManager
+        this.tokenManager.reset();
         this.router.navigate(['/auth/login']);
-    }    /**
+    }/**
      * Limpia los datos de sesión del localStorage
      */
     private clearSession(): void {
@@ -611,8 +830,82 @@ export class AuthService {
             localStorage.removeItem(TOKEN_STORAGE.USER_DATA);
             localStorage.removeItem(TOKEN_STORAGE.SELECTED_EMPRESA);
             localStorage.removeItem(TOKEN_STORAGE.EMPRESAS_LIST);
+            localStorage.removeItem(TOKEN_STORAGE.LOGIN_TIMESTAMP);
+            localStorage.removeItem(TOKEN_STORAGE.TOKEN_EXPIRY);
         }
         this.userSessionSubject.next(null);
         this.selectedEmpresaSubject.next(null);
+    }
+
+    /**
+     * Verifica y maneja las alertas de sesión según diferentes umbrales
+     */
+    private checkSessionWarnings(sessionTimeRemaining: number): void {
+        if (sessionTimeRemaining <= 0) return;
+        
+        const minutes = Math.floor(sessionTimeRemaining / (60 * 1000));
+        
+        // Alerta crítica - 5 minutos
+        if (sessionTimeRemaining <= SESSION_CONFIG.WARNING_THRESHOLDS.CRITICAL && 
+            sessionTimeRemaining > SESSION_CONFIG.WARNING_THRESHOLDS.CRITICAL - 60000 && 
+            !this.hasShownWarning('critical')) {
+            this.notificationService.error(
+                `🚨 ATENCIÓN: Su sesión expirará en ${minutes} minutos. Guarde su trabajo.`
+            );
+            this.setWarningShown('critical');
+        }
+        // Alerta de advertencia - 15 minutos
+        else if (sessionTimeRemaining <= SESSION_CONFIG.WARNING_THRESHOLDS.WARNING && 
+                 sessionTimeRemaining > SESSION_CONFIG.WARNING_THRESHOLDS.WARNING - 60000 && 
+                 !this.hasShownWarning('warning')) {
+            this.notificationService.sessionExpiringSoon(minutes);
+            this.setWarningShown('warning');
+        }
+        // Alerta informativa - 30 minutos
+        else if (sessionTimeRemaining <= SESSION_CONFIG.WARNING_THRESHOLDS.INFO && 
+                 sessionTimeRemaining > SESSION_CONFIG.WARNING_THRESHOLDS.INFO - 60000 && 
+                 !this.hasShownWarning('info')) {
+            this.notificationService.info(
+                `ℹ️ Su sesión estará activa por ${minutes} minutos más.`
+            );
+            this.setWarningShown('info');
+        }
+    }
+
+    /**
+     * Verifica si ya se mostró una advertencia específica
+     */
+    private hasShownWarning(type: 'critical' | 'warning' | 'info'): boolean {
+        if (!isPlatformBrowser(this.platformId)) return false;
+        
+        const key = `tms_warning_${type}_shown`;
+        const loginTimestamp = localStorage.getItem(TOKEN_STORAGE.LOGIN_TIMESTAMP);
+        const warningTimestamp = localStorage.getItem(key);
+        
+        if (!warningTimestamp || !loginTimestamp) return false;
+        
+        // Verificar si la advertencia fue mostrada en esta sesión
+        return parseInt(warningTimestamp) > parseInt(loginTimestamp);
+    }
+
+    /**
+     * Marca una advertencia como mostrada
+     */
+    private setWarningShown(type: 'critical' | 'warning' | 'info'): void {
+        if (!isPlatformBrowser(this.platformId)) return;
+        
+        const key = `tms_warning_${type}_shown`;
+        localStorage.setItem(key, Date.now().toString());
+    }
+
+    /**
+     * Limpia las marcas de advertencias mostradas
+     */
+    private clearWarningFlags(): void {
+        if (!isPlatformBrowser(this.platformId)) return;
+        
+        localStorage.removeItem('tms_warning_critical_shown');
+        localStorage.removeItem('tms_warning_warning_shown');
+        localStorage.removeItem('tms_warning_info_shown');
     }
 }
