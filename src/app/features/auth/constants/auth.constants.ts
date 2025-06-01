@@ -14,12 +14,14 @@ export const AUTH_API = {
  */
 export const TOKEN_STORAGE = {
   AUTH_TOKEN: 'tms_auth_token',
+  REFRESH_TOKEN: 'tms_refresh_token',
   SESSION_TOKEN: 'tms_session_token',
   USER_DATA: 'tms_user_data',
   SELECTED_EMPRESA: 'tms_selected_empresa',
   EMPRESAS_LIST: 'tms_empresas_list',
   LOGIN_TIMESTAMP: 'tms_login_timestamp',
-  TOKEN_EXPIRY: 'tms_token_expiry'
+  TOKEN_EXPIRY: 'tms_token_expiry',
+  REFRESH_TOKEN_EXPIRY: 'tms_refresh_token_expiry'
 };
 
 /**

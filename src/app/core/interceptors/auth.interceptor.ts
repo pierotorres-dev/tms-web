@@ -40,11 +40,13 @@ export const authInterceptor: HttpInterceptorFn = (
     const authReq = req.clone({
       headers: req.headers.set('Authorization', `Bearer ${token}`)
     });
-    
-    // Procesamos la request con el token
+      // Procesamos la request con el token
     return next(authReq).pipe(
-      catchError((error) => {        // Si es un error 401 y tenemos un token, intentamos refrescar
-        if (error instanceof HttpErrorResponse && error.status === 403 && token) {
+      catchError((error) => {
+        // Si es un error 401 o 403 y tenemos un token, intentamos refrescar
+        if (error instanceof HttpErrorResponse && 
+            (error.status === 401 || error.status === 403) && 
+            token) {
           return handleUnauthorizedError(authService, tokenManager, req, next, router);
         }
         

@@ -9,6 +9,7 @@ export interface LoginResponse {
   role: string;
   empresas: EmpresaInfo[];
   token: string;
+  refreshToken: string;
   sessionToken: string;
   name: string;
   lastName: string;
@@ -38,6 +39,7 @@ export interface UserResponse {
 
 export interface AuthResponse {
   token: string;
+  refreshToken: string;
 }
 
 export interface ErrorResponse {
