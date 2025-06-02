@@ -124,28 +124,15 @@ export class AuthService {
                             }
                         });
                         return;
-                    }
-
-                    // Validar el token antes de restaurar la sesión
-                    /*if (storedToken) {
-                        this.validateStoredToken(storedToken).subscribe({
-                            next: (isValid) => {
-                                if (isValid) {
-                                    this.restoreSession(storedUser, storedEmpresa);
-                                } else {
-                                    this.clearSession();
-                                }
-                                resolve();
-                            },
-                            error: () => {
-                                this.clearSession();
-                                resolve();
-                            }
-                        });
+                    }                    // Restaurar la sesión directamente si hay token almacenado
+                    // El API Gateway se encarga de la validación en cada request
+                    if (storedToken) {
+                        this.restoreSession(storedUser, storedEmpresa);
+                        resolve();
                     } else {
                         this.clearSession();
                         resolve();
-                    }*/
+                    }
                 } catch (error) {
                     // Si hay un error al parsear los datos, limpiamos el localStorage
                     this.clearSession();
@@ -155,9 +142,7 @@ export class AuthService {
                 resolve();
             }
         });
-    }
-
-    /**
+    }    /**
      * Restaura la sesión del usuario
      */
     private restoreSession(storedUser: string, storedEmpresa: string | null): void {

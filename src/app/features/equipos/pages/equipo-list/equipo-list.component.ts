@@ -3,13 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subject, combineLatest, of } from 'rxjs';
-import { takeUntil, debounceTime, distinctUntilChanged, filter, catchError } from 'rxjs/operators';
+import { takeUntil, debounceTime, distinctUntilChanged, filter, catchError, switchMap, tap, map } from 'rxjs/operators';
 
 // Importar servicios y modelos
-import { FleetService, EquiposService } from '../../services';
+import { FleetService, EquiposService, CatalogosService, EquiposEnhancedService } from '../../services';
 import { EquipoResponse, EstadoEquipoResponse, EquipoFilters, InspectionFilterType } from '../../models';
 import { EmpresaContextService } from '../../../../core/services/empresa-context.service';
 import { AuthService } from '../../../auth/services/auth.service';
+import { NotificationService } from '../../../../core/services/notification.service';
 import { EstadoUtilsService } from '../../utils/estado-utils.service';
 import { InspectionStatusService } from '../../utils/inspection-status.service';
 import { TmsButtonComponent } from '../../../../shared/components/tms-button/tms-button.component';
@@ -36,10 +37,12 @@ export class EquipoListComponent implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
   private readonly fleetService = inject(FleetService);
   private readonly equiposService = inject(EquiposService);
+  private readonly catalogosService = inject(CatalogosService);
+  private readonly equiposEnhancedService = inject(EquiposEnhancedService);
   private readonly empresaContextService = inject(EmpresaContextService);
   private readonly authService = inject(AuthService);
-  private readonly estadoUtils = inject(EstadoUtilsService);
-  private readonly inspectionStatusService = inject(InspectionStatusService);
+  private readonly estadoUtils = inject(EstadoUtilsService);  private readonly inspectionStatusService = inject(InspectionStatusService);
+  private readonly notificationService = inject(NotificationService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
 
@@ -48,6 +51,7 @@ export class EquipoListComponent implements OnInit, OnDestroy {
   estadosEquipo: EstadoEquipoResponse[] = [];
   loading = false;
   error: string | null = null;
+  
   // Filtros y búsqueda
   filterForm: FormGroup;
   currentFilters: EquipoFilters = {};
@@ -73,6 +77,7 @@ export class EquipoListComponent implements OnInit, OnDestroy {
   // Ordenamiento
   sortField = '';
   sortDirection: 'asc' | 'desc' = 'asc';
+  
   // Estados de carga más granulares
   loadingStates = {
     initializing: true,
@@ -94,7 +99,7 @@ export class EquipoListComponent implements OnInit, OnDestroy {
     hasEmpresa: false,
     empresaId: null as number | null,
     empresaName: '' as string
-  };  constructor() {
+  };constructor() {
     this.filterForm = this.fb.group({
       search: [''],
       estadoId: [''],
@@ -191,16 +196,15 @@ export class EquipoListComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       this.router.navigate(['/auth/select-empresa']);
     }, 2000);
-  }
-  /**
+  }  /**
    * Carga datos iniciales necesarios (solo cuando la autenticación es válida)
    */
   private loadInitialData(): void {
     this.loadingStates.catalogos = true;
     this.error = null;
 
-    // Cargar catálogos primero
-    this.fleetService.loadCatalogos()
+    // Cargar catálogos usando el servicio centralizado
+    this.catalogosService.initializeCatalogos()
       .pipe(
         takeUntil(this.destroy$),
         catchError(error => {
@@ -209,25 +213,29 @@ export class EquipoListComponent implements OnInit, OnDestroy {
           // Verificar si es un error de autenticación
           if (error.status === 401) {
             this.handleAuthenticationError('Token de autenticación inválido o expirado');
-            return of([]);
+            return of(false);
           }
 
           throw error;
         })
       )
       .subscribe({
-        next: () => {
+        next: (success) => {
           this.loadingStates.catalogos = false;
 
-          // Suscribirse a estados de equipo
-          this.fleetService.estadosEquipo$
-            .pipe(takeUntil(this.destroy$))
-            .subscribe(estados => {
-              this.estadosEquipo = estados;
-            });
+          if (success) {
+            // Suscribirse a estados de equipo desde el servicio de catálogos
+            this.catalogosService.getEstadosEquipo()
+              .pipe(takeUntil(this.destroy$))
+              .subscribe(estados => {
+                this.estadosEquipo = estados;
+              });
 
-          // Cargar equipos
-          this.loadEquipos();
+            // Cargar equipos
+            this.loadEquipos();
+          } else {
+            this.error = 'Error al cargar los catálogos. Verifique su conexión e intente nuevamente.';
+          }
         },
         error: (error) => {
           this.loadingStates.catalogos = false;
@@ -238,7 +246,7 @@ export class EquipoListComponent implements OnInit, OnDestroy {
           }
         }
       });
-  }  /**
+  }/**
    * Configura subscripciones para filtros con debounce
    */
   private setupFilterSubscriptions(): void {
@@ -266,13 +274,13 @@ export class EquipoListComponent implements OnInit, OnDestroy {
           this.applyFiltersFromFormValue(formValue);
         }
       });
-  }/**
-   * Carga equipos con validaciones mejoradas
+  }  /**
+   * Carga equipos usando el servicio mejorado con filtrado local y paginación
    */
   loadEquipos(): void {
     this.loadingStates.equipos = true;
-    this.loading = true; // Asegurar que se muestre el loading
-    this.error = null; // Limpiar errores previos
+    this.loading = true;
+    this.error = null;
 
     // Verificación de seguridad antes de cargar
     if (!this.authService.getToken()) {
@@ -286,59 +294,85 @@ export class EquipoListComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Actualizar filtros con empresaId
+    // Construir filtros actuales
     const filtrosConEmpresa = {
       ...this.currentFilters,
       empresaId
     };
 
-    this.equiposService.searchEquipos(filtrosConEmpresa, { showErrorNotification: false })
-      .pipe(
-        takeUntil(this.destroy$),
-        catchError(error => {
-          console.error('Error loading equipos:', error);
+    // Usar el nuevo servicio mejorado para obtener equipos paginados con filtrado local
+    this.equiposEnhancedService.getEquiposPaginated(
+      empresaId,
+      filtrosConEmpresa,
+      this.pagination.currentPage,
+      this.pagination.size
+    ).pipe(
+      takeUntil(this.destroy$),
+      catchError(error => {
+        console.error('Error loading equipos:', error);
 
-          // Manejar errores específicos
-          if (error.status === 401) {
-            this.handleAuthenticationError('Su sesión ha expirado');
-            return of([]);
-          } else if (error.status === 403) {
-            this.error = 'No tiene permisos para acceder a los equipos de esta empresa.';
-            this.loadingStates.equipos = false;
-            return of([]);
-          }
-
-          throw error;
-        })
-      )
-      .subscribe({
-        next: (equipos) => {
-          this.processEquiposData(equipos);
-          this.loadingStates.equipos = false;
-          this.loading = false;
-        },
-        error: (error) => {
-          this.loadingStates.equipos = false;
-          this.loading = false;
-
-          if (error.status !== 401 && error.status !== 403) { // Estos ya se manejan arriba
-            this.error = 'Error al cargar los equipos. Verifique su conexión e intente nuevamente.';
-          }
+        // Manejar errores específicos
+        if (error.status === 401) {
+          this.handleAuthenticationError('Token de autenticación inválido o expirado');
+          return of({
+            equipos: [],
+            totalElements: 0,
+            totalPages: 0,
+            currentPage: 0,
+            pageSize: this.pagination.size
+          });
         }
-      });
+
+        if (error.status === 403) {
+          this.error = 'No tiene permisos para acceder a los equipos de esta empresa.';
+          return of({
+            equipos: [],
+            totalElements: 0,
+            totalPages: 0,
+            currentPage: 0,
+            pageSize: this.pagination.size
+          });
+        }
+
+        // Error genérico
+        this.error = 'Error al cargar los equipos. Verifique su conexión e intente nuevamente.';
+        return of({
+          equipos: [],
+          totalElements: 0,
+          totalPages: 0,
+          currentPage: 0,
+          pageSize: this.pagination.size
+        });
+      })
+    ).subscribe({
+      next: (result) => {
+        this.equipos = result.equipos;
+        this.pagination.totalElements = result.totalElements;
+        this.pagination.totalPages = result.totalPages;
+        this.pagination.currentPage = result.currentPage;
+
+        this.loadingStates.equipos = false;
+        this.loading = false;
+
+        // Debug en desarrollo
+        if (!environment.production && console?.log) {
+          console.log('✅ Equipos cargados exitosamente:', {
+            filtros: filtrosConEmpresa,
+            equiposEncontrados: result.equipos.length,
+            totalElementos: result.totalElements,
+            paginaActual: result.currentPage,
+            totalPaginas: result.totalPages
+          });
+        }
+      },
+      error: (error) => {
+        this.loadingStates.equipos = false;
+        this.loading = false;
+        console.error('Unexpected error in loadEquipos:', error);
+      }
+    });
   }
-
-  /**
-   * Procesa datos de equipos para paginación frontend
-   */
-  private processEquiposData(allEquipos: EquipoResponse[]): void {
-    const startIndex = this.pagination.currentPage * this.pagination.size;
-    const endIndex = startIndex + this.pagination.size;
-
-    this.equipos = allEquipos.slice(startIndex, endIndex);
-    this.pagination.totalElements = allEquipos.length;
-    this.pagination.totalPages = Math.ceil(allEquipos.length / this.pagination.size);
-  }  /**
+/**
    * Aplica filtros desde los valores del formulario 
    * (usado por valueChanges subscription)
    */  private applyFiltersFromFormValue(formValue: any): void {
@@ -416,28 +450,25 @@ export class EquipoListComponent implements OnInit, OnDestroy {
 
     this.loadEquipos();
   }
-
   /**
-   * Cambia la página currentPage
+   * Cambia la página actual (ahora usa filtrado local)
    */
   onPageChange(page: number): void {
     if (page >= 0 && page < this.pagination.totalPages) {
       this.pagination.currentPage = page;
-      this.loadEquipos();
+      this.loadEquipos(); // El servicio maneja la paginación local
     }
   }
 
   /**
-   * Cambia el tamaño de página
+   * Cambia el tamaño de página (reinicia a página 0)
    */
   onPageSizeChange(size: number): void {
     this.pagination.size = size;
     this.pagination.currentPage = 0;
-    this.loadEquipos();
-  }
-
-  /**
-   * Maneja ordenamiento de columnas
+    this.loadEquipos(); // El servicio maneja la nueva paginación
+  }  /**
+   * Maneja ordenamiento de columnas (ahora usa el servicio mejorado)
    */
   onSort(field: string): void {
     if (this.sortField === field) {
@@ -447,17 +478,9 @@ export class EquipoListComponent implements OnInit, OnDestroy {
       this.sortDirection = 'asc';
     }
 
-    // Ordenar equipos actuales
-    this.equipos.sort((a, b) => {
-      const aValue = this.getFieldValue(a, field);
-      const bValue = this.getFieldValue(b, field);
-
-      if (aValue < bValue) return this.sortDirection === 'asc' ? -1 : 1;
-      if (aValue > bValue) return this.sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
+    // Ordenar equipos actuales usando el servicio
+    this.equipos = this.equiposEnhancedService.sortEquipos(this.equipos, this.sortField, this.sortDirection);
   }
-
   /**
    * Obtiene valor de campo para ordenamiento
    */
@@ -468,8 +491,11 @@ export class EquipoListComponent implements OnInit, OnDestroy {
       case 'negocio':
         return equipo.negocio?.toLowerCase() || '';
       case 'equipo':
-        return equipo.equipo?.toLowerCase() || ''; case 'estado':
+        return equipo.equipo?.toLowerCase() || '';
+      case 'estado':
         return equipo.estadoEquipoResponse?.nombre.toLowerCase() || '';
+      case 'fechaInspeccion':
+        return equipo.fechaInspeccion || '';
       default:
         return '';
     }
@@ -623,10 +649,9 @@ export class EquipoListComponent implements OnInit, OnDestroy {
    */
   get empresaId(): number | null {
     return this.empresaContextService.getCurrentEmpresaId();
-  }
-
-  /**
-   * Actualiza los datos refrescando desde el servidor
+  }  /**
+   * Actualiza los datos FORZANDO la recarga desde el servidor
+   * Este método ignora completamente el cache y solicita datos frescos
    */
   refreshData(): void {
     // Limpiar cualquier error previo
@@ -634,28 +659,102 @@ export class EquipoListComponent implements OnInit, OnDestroy {
     
     // Establecer estado de carga inmediatamente para activar la animación
     this.loading = true;
+    this.loadingStates.equipos = true;
     
     // Limpiar datos actuales para mostrar un estado de carga limpio
-    // Esto evita que se muestren datos obsoletos mientras se cargan los nuevos
     this.equipos = [];
     this.pagination.totalElements = 0;
     this.pagination.totalPages = 0;
     this.pagination.currentPage = 0;
-      // Limpiar filtros aplicados para una refresh completa
-    this.filterForm.reset({
-      tipoEquipoId: '',
-      estadoId: '',
-      search: '',
-      estadoInspeccion: 'todos'
-    });
     
-    // Pequeño delay para asegurar que la animación sea visible
-    // Especialmente útil para conexiones rápidas
-    setTimeout(() => {
-      // Recargar datos desde el servidor
-      // El método loadEquipos() manejará el estado de loading internamente
-      this.loadEquipos();
-    }, 100); // 100ms delay mínimo para UX
+    const empresaId = this.empresaContextService.getCurrentEmpresaId();
+    if (!empresaId) {
+      this.handleEmpresaSelectionError();
+      return;
+    }
+
+    // Debug en desarrollo
+    if (!environment.production && console?.log) {
+      console.log('🔄 Refrescando datos desde el servidor (ignorando cache)...');
+    }
+
+    // PASO 1: Forzar recarga de catálogos (opcional pero recomendado)
+    // Los catálogos cambian menos frecuentemente, así que es opcional
+    this.catalogosService.reloadCatalogos({ showSuccessNotification: false })
+      .pipe(
+        // PASO 2: Forzar recarga de equipos (SIEMPRE)
+        switchMap(() => {
+          // Limpiar cache de equipos para esta empresa antes de recargar
+          this.equiposEnhancedService.clearCacheForEmpresa(empresaId);
+          
+          // Forzar recarga desde servidor
+          return this.equiposEnhancedService.refreshEquipos(empresaId, { 
+            showSuccessNotification: false 
+          });
+        }),
+        // PASO 3: Aplicar filtros actuales después de la recarga
+        switchMap(() => {
+          const formValue = this.filterForm.value;
+          const filtros = this.buildFiltersFromFormValue(formValue, empresaId);
+          
+          return this.equiposEnhancedService.getEquiposPaginated(
+            empresaId,
+            filtros,
+            this.pagination.currentPage,
+            this.pagination.size
+          );
+        }),
+        takeUntil(this.destroy$),
+        catchError(error => {
+          console.error('Error during forced refresh:', error);
+          
+          if (error.status === 401) {
+            this.handleAuthenticationError('Token de autenticación inválido o expirado');
+          } else {
+            this.error = 'Error al actualizar los datos. Verifique su conexión e intente nuevamente.';
+          }
+          
+          this.loading = false;
+          this.loadingStates.equipos = false;
+          
+          return of({
+            equipos: [],
+            totalElements: 0,
+            totalPages: 0,
+            currentPage: 0,
+            pageSize: this.pagination.size
+          });
+        })
+      )
+      .subscribe({
+        next: (result) => {
+          // Actualizar datos con la respuesta fresca del servidor
+          this.equipos = result.equipos;
+          this.pagination.totalElements = result.totalElements;
+          this.pagination.totalPages = result.totalPages;
+          this.pagination.currentPage = result.currentPage;
+
+          // Finalizar estados de carga
+          this.loading = false;
+          this.loadingStates.equipos = false;
+
+          // Debug en desarrollo
+          if (!environment.production && console?.log) {
+            console.log('✅ Datos refrescados exitosamente desde el servidor:', {
+              equiposEncontrados: result.equipos.length,
+              totalElementos: result.totalElements,
+              cacheIgnorado: true,
+              timestamp: new Date().toISOString()
+            });
+          }          // Mostrar notificación de éxito
+          this.notificationService.success('Datos actualizados desde el servidor');
+        },
+        error: (error) => {
+          this.loading = false;
+          this.loadingStates.equipos = false;
+          console.error('Unexpected error during refresh:', error);
+        }
+      });
   }
 
   /**
@@ -864,5 +963,27 @@ export class EquipoListComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.warn('Error al guardar preferencias del panel de inspecciones:', error);
     }
+  }
+
+  /**
+   * Construye filtros desde los valores del formulario
+   * (método auxiliar para refreshData)
+   */
+  private buildFiltersFromFormValue(formValue: any, empresaId: number): EquipoFilters {
+    // Convertir estadoId a number si existe
+    let estadoId: number | undefined = undefined;
+    if (formValue.estadoId && formValue.estadoId !== '' && formValue.estadoId !== '0') {
+      estadoId = Number(formValue.estadoId);
+      if (isNaN(estadoId) || estadoId <= 0) {
+        estadoId = undefined;
+      }
+    }
+
+    return {
+      empresaId,
+      estadoId,
+      placa: formValue.search?.trim() || undefined,
+      estadoInspeccion: formValue.estadoInspeccion || 'todos'
+    };
   }
 }
