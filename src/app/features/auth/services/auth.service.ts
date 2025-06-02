@@ -315,8 +315,8 @@ export class AuthService {
             default:
                 return false;
         }
-    }
-
+    }    
+    
     /**
      * Genera un token para un usuario y empresa específicos
      * 
@@ -334,17 +334,21 @@ export class AuthService {
             return throwError(() => new Error('Session token required'));
         }
 
-        this.loadingSubject.next(true);
+        this.loadingSubject.next(true);        // Añadimos el sessionToken en los headers directamente para evitar que el interceptor lo sobreescriba
+        const headers = new HttpHeaders({
+            'Authorization': `Bearer ${sessionToken}`
+        });
 
-        const params = this.http.buildParams({
+        const body = {
             userId,
-            empresaId,
-            sessionToken
-        }); return this.http.post<AuthResponse>(
+            empresaId
+        };
+
+        return this.http.post<AuthResponse>(
             AUTH_API.GENERATE_TOKEN,
-            null,
+            body,
             {
-                params,
+                headers,
                 showErrorNotification: true
             }
         ).pipe(

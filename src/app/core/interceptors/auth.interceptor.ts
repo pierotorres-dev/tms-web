@@ -23,13 +23,17 @@ export const authInterceptor: HttpInterceptorFn = (
   const authService = inject(AuthService);
   const tokenManager = inject(TokenManagerService);
   const router = inject(Router);
-    // Solo añadimos el token para peticiones a nuestra API (URLs relativas o que empiecen con nuestro dominio)
+  // Solo añadimos el token para peticiones a nuestra API (URLs relativas o que empiecen con nuestro dominio)
   if (!req.url.startsWith(environment.apiUrl) && !req.url.startsWith('/api/')) {
     return next(req);
   }
   
-  // No añadimos el token para login
-  if (req.url.includes('/api/auth/login')) {
+  // No añadimos el token para endpoints de autenticación, tokens o usuarios
+  if (
+    req.url.includes('/api/auth') || 
+    req.url.includes('/api/tokens') || 
+    req.url.includes('/api/users/register')
+  ) {
     return next(req);
   }
   
@@ -80,7 +84,7 @@ function handleUnauthorizedError(
         tokenManager.setRefreshing(false);
         refreshTokenSubject.next(response.token);
         
-        // Si tenemos un nuevo token, reintentamos la request
+        // Si tenemos un nuevo token, reintentamos la request original
         if (response.token) {
           const authReq = req.clone({
             headers: req.headers.set('Authorization', `Bearer ${response.token}`)
