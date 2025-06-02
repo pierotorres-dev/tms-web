@@ -59,7 +59,9 @@ export class AuthService {
     private retryCount = 0;
 
     // Flag para rastrear si ya se mostró la advertencia de sesión
-    private sessionWarningShown = false;/**
+    private sessionWarningShown = false;
+    
+    /**
      * Al inicializar el servicio, intentamos recuperar la sesión del usuario
      * desde el localStorage si existe
      */
@@ -67,7 +69,9 @@ export class AuthService {
         if (isPlatformBrowser(this.platformId)) { // Check if in browser
             // this.checkStoredSession(); // We'll call this via APP_INITIALIZER
         }
-    }    /**
+    }    
+    
+    /**
      * Comprueba si existe una sesión guardada en el localStorage.
      * This method will be called by the APP_INITIALIZER.
      */
@@ -98,12 +102,10 @@ export class AuthService {
             const storedUser = localStorage.getItem(TOKEN_STORAGE.USER_DATA);
             const storedToken = localStorage.getItem(TOKEN_STORAGE.AUTH_TOKEN);
             const storedRefreshToken = localStorage.getItem(TOKEN_STORAGE.REFRESH_TOKEN);
-            const storedEmpresa = localStorage.getItem(TOKEN_STORAGE.SELECTED_EMPRESA);
-
-            if (storedUser && (storedToken || storedRefreshToken)) {
+            const storedEmpresa = localStorage.getItem(TOKEN_STORAGE.SELECTED_EMPRESA);            if (storedUser && (storedToken || storedRefreshToken)) {
                 try {
-                    // Verificar si la sesión de 24 horas ha expirado
-                    if (this.isSessionExpired()) {
+                    // Verificar si el refresh token ha expirado (manejo exclusivo por refresh token)
+                    if (this.isRefreshTokenExpired()) {
                         this.clearSession();
                         resolve();
                         return;
@@ -125,7 +127,7 @@ export class AuthService {
                     }
 
                     // Validar el token antes de restaurar la sesión
-                    if (storedToken) {
+                    /*if (storedToken) {
                         this.validateStoredToken(storedToken).subscribe({
                             next: (isValid) => {
                                 if (isValid) {
@@ -143,7 +145,7 @@ export class AuthService {
                     } else {
                         this.clearSession();
                         resolve();
-                    }
+                    }*/
                 } catch (error) {
                     // Si hay un error al parsear los datos, limpiamos el localStorage
                     this.clearSession();
@@ -177,47 +179,9 @@ export class AuthService {
 
         // Iniciar el timer de renovación automática de tokens
         this.startTokenRefreshTimer();
-    }/**
-     * Valida un token almacenado sin mostrar notificaciones de error
-     */
-    private validateStoredToken(token: string): Observable<boolean> {
-        const headers = new HttpHeaders({
-            'Authorization': `Bearer ${token}`
-        });
-
-        return this.http.get<boolean>(
-            AUTH_API.VALIDATE_TOKEN,
-            {
-                headers,
-                showErrorNotification: false
-            }
-        ).pipe(
-            catchError((error) => {
-                // Si el token access falla, intentar con refresh token
-                if (error.status === 401 || error.status === 403) {
-                    return this.validateWithRefreshToken();
-                }
-                return of(false);
-            })
-        );
     }
-
+    
     /**
-     * Intenta validar usando el refresh token cuando el access token falla
-     */
-    private validateWithRefreshToken(): Observable<boolean> {
-        const refreshToken = localStorage.getItem(TOKEN_STORAGE.REFRESH_TOKEN);
-        
-        if (!refreshToken || this.isRefreshTokenExpired()) {
-            return of(false);
-        }
-
-        // Intentar refrescar el token
-        return this.refreshToken().pipe(
-            map(() => true),
-            catchError(() => of(false))
-        );
-    }/**
      * Realiza la autenticación del usuario
      * 
      * Flujo según el número de empresas:
@@ -529,16 +493,11 @@ export class AuthService {
                 name: session.name,
                 lastName: session.lastName,
                 empresaId: session.empresaId
-            }));
-
-            // Guardar refresh token si se proporciona
+            }));            // Guardar refresh token si se proporciona
             if (refreshToken) {
                 localStorage.setItem(TOKEN_STORAGE.REFRESH_TOKEN, refreshToken);
                 this.setRefreshTokenExpiry();
             }
-
-            // Establecer el timestamp de login
-            this.setLoginTimestamp();
 
             // Establecer el expiry del token
             this.setTokenExpiry();
@@ -551,16 +510,6 @@ export class AuthService {
 
             // Iniciar el timer de refresco de tokens
             this.startTokenRefreshTimer();
-        }
-    }
-
-    /**
-     * Establece el timestamp de login inicial
-     */
-    private setLoginTimestamp(): void {
-        if (isPlatformBrowser(this.platformId)) {
-            const now = Date.now();
-            localStorage.setItem(TOKEN_STORAGE.LOGIN_TIMESTAMP, now.toString());
         }
     }    /**
      * Establece el timestamp de expiración del token
@@ -592,43 +541,27 @@ export class AuthService {
         if (!refreshTokenExpiry) return true;
         
         return Date.now() > parseInt(refreshTokenExpiry);
-    }
-
-    /**
+    }    /**
      * Actualiza el estado del TokenManager con información actual
      */
     private updateTokenManagerStatus(): void {
         if (!isPlatformBrowser(this.platformId)) return;
 
-        const loginTimestamp = localStorage.getItem(TOKEN_STORAGE.LOGIN_TIMESTAMP);
+        const refreshTokenExpiry = localStorage.getItem(TOKEN_STORAGE.REFRESH_TOKEN_EXPIRY);
         const tokenExpiry = localStorage.getItem(TOKEN_STORAGE.TOKEN_EXPIRY);
         
-        if (loginTimestamp) {
-            const sessionAge = Date.now() - parseInt(loginTimestamp);
-            const sessionTimeRemaining = Math.max(0, SESSION_CONFIG.SESSION_LIFETIME - sessionAge);
+        // Calcular tiempo restante de sesión basado en refresh token expiry
+        if (refreshTokenExpiry) {
+            const sessionTimeRemaining = Math.max(0, parseInt(refreshTokenExpiry) - Date.now());
             this.tokenManager.updateSessionTimeRemaining(sessionTimeRemaining);
         }
 
+        // Configurar próximo refresh basado en access token expiry
         if (tokenExpiry) {
             const nextRefreshTime = new Date(parseInt(tokenExpiry) - SESSION_CONFIG.REFRESH_THRESHOLD);
             this.tokenManager.setNextRefresh(nextRefreshTime);
         }
-    }
-
-    /**
-     * Verifica si la sesión de 24 horas ha expirado
-     */
-    private isSessionExpired(): boolean {
-        if (!isPlatformBrowser(this.platformId)) return false;
-        
-        const loginTimestamp = localStorage.getItem(TOKEN_STORAGE.LOGIN_TIMESTAMP);
-        if (!loginTimestamp) return true;
-        
-        const sessionAge = Date.now() - parseInt(loginTimestamp);
-        return sessionAge > SESSION_CONFIG.SESSION_LIFETIME;
-    }
-
-    /**
+    }    /**
      * Verifica si el token está próximo a expirar
      */
     private shouldRefreshToken(): boolean {
@@ -647,16 +580,17 @@ export class AuthService {
         }
 
         // Actualizar estado inicial del TokenManager
-        this.updateTokenManagerStatus();
-
-        this.refreshTimer = setInterval(() => {
-            if (this.isSessionExpired()) {
+        this.updateTokenManagerStatus();        this.refreshTimer = setInterval(() => {
+            // Verificar si el refresh token ha expirado
+            if (this.isRefreshTokenExpired()) {
                 this.handleSessionExpired();
                 return;
             }
 
             // Actualizar el estado del TokenManager periódicamente
-            this.updateTokenManagerStatus();            // Verificar alertas de sesión con diferentes umbrales
+            this.updateTokenManagerStatus();
+            
+            // Verificar alertas de sesión con diferentes umbrales
             const currentStatus = this.tokenManager.getCurrentStatus();
             const sessionTimeRemaining = currentStatus.sessionTimeRemaining;
             
@@ -717,7 +651,7 @@ export class AuthService {
                 // Notificación de error en renovación
                 this.notificationService.error('Error al renovar sesión automáticamente');
                 
-                if (error.status === 401) {
+                if (error.status === 401 || error.status === 403) {
                     this.handleSessionExpired();
                 }
             }
@@ -896,7 +830,6 @@ export class AuthService {
             localStorage.removeItem(TOKEN_STORAGE.USER_DATA);
             localStorage.removeItem(TOKEN_STORAGE.SELECTED_EMPRESA);
             localStorage.removeItem(TOKEN_STORAGE.EMPRESAS_LIST);
-            localStorage.removeItem(TOKEN_STORAGE.LOGIN_TIMESTAMP);
             localStorage.removeItem(TOKEN_STORAGE.TOKEN_EXPIRY);
             // Limpiar banderas de advertencias
             this.clearWarningFlags();
@@ -938,22 +871,22 @@ export class AuthService {
             );
             this.setWarningShown('info');
         }
-    }
-
-    /**
+    }    /**
      * Verifica si ya se mostró una advertencia específica
      */
     private hasShownWarning(type: 'critical' | 'warning' | 'info'): boolean {
         if (!isPlatformBrowser(this.platformId)) return false;
         
         const key = `tms_warning_${type}_shown`;
-        const loginTimestamp = localStorage.getItem(TOKEN_STORAGE.LOGIN_TIMESTAMP);
+        const refreshTokenExpiry = localStorage.getItem(TOKEN_STORAGE.REFRESH_TOKEN_EXPIRY);
         const warningTimestamp = localStorage.getItem(key);
         
-        if (!warningTimestamp || !loginTimestamp) return false;
+        if (!warningTimestamp || !refreshTokenExpiry) return false;
         
-        // Verificar si la advertencia fue mostrada en esta sesión
-        return parseInt(warningTimestamp) > parseInt(loginTimestamp);
+        // Verificar si la advertencia fue mostrada en esta sesión actual
+        // (usando refresh token expiry como referencia de sesión)
+        const sessionStartTime = parseInt(refreshTokenExpiry) - SESSION_CONFIG.SESSION_LIFETIME;
+        return parseInt(warningTimestamp) > sessionStartTime;
     }
 
     /**

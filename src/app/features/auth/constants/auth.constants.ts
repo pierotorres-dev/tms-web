@@ -3,7 +3,6 @@
  */
 export const AUTH_API = {
   LOGIN: '/api/auth/login',
-  VALIDATE_TOKEN: '/api/auth/validate',
   REGISTER: '/api/users/register',
   GENERATE_TOKEN: '/api/tokens/generate',
   REFRESH_TOKEN: '/api/tokens/refresh'
@@ -19,7 +18,6 @@ export const TOKEN_STORAGE = {
   USER_DATA: 'tms_user_data',
   SELECTED_EMPRESA: 'tms_selected_empresa',
   EMPRESAS_LIST: 'tms_empresas_list',
-  LOGIN_TIMESTAMP: 'tms_login_timestamp',
   TOKEN_EXPIRY: 'tms_token_expiry',
   REFRESH_TOKEN_EXPIRY: 'tms_refresh_token_expiry'
 };
